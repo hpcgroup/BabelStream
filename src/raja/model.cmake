@@ -43,6 +43,9 @@ macro(setup)
         register_definitions(RAJA_TARGET_GPU)
     endif ()
 
+    if (EXISTS ${CHAI_IN_TREE})
+        register_definitions(RAJA_USE_CHAI)
+    endif ()
 
     if (EXISTS "${RAJA_IN_TREE}")
 
