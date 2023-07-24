@@ -11,9 +11,20 @@ register_flag_optional(RAJA_IN_TREE
          See https://github.com/LLNL/RAJA/blob/08cbbafd2d21589ebf341f7275c229412d0fe903/CMakeLists.txt#L44 for all available options
 " "")
 
+register_flag_optional(CHAI_IN_TREE
+        "Absolute path to the source distribution directory of CHAI, if being used.
+         Make sure to use the release version of CHAI or clone CHAI recursively with submodules.
+         Remember to append CHAI specific flags as well, for example:
+             -DCHAI_IN_TREE=... -DENABLE_CUDA=ON ...
+         CHAI options always override RAJA options." "")
+
 register_flag_optional(RAJA_IN_PACKAGE
-        "Use if Raja is part of a package dependency: 
+        "Use if Raja is part of a package dependency:
         Path to installation" "")
+
+register_flag_optional(CHAI_IN_PACKAGE
+        "Use if CHAI is part of a package dependency:
+        Path to installation. Overrides RAJA path." "")
 
 register_flag_optional(TARGET
         "Target offload device, implemented values are CPU, NVIDIA"
@@ -44,10 +55,44 @@ macro(setup)
     endif ()
 
     if (EXISTS ${CHAI_IN_TREE})
-        register_definitions(RAJA_USE_CHAI)
-    endif ()
 
-    if (EXISTS "${RAJA_IN_TREE}")
+        message(STATUS "Building using in-tree CHAI source at `${CHAI_IN_TREE}`")
+
+        set(CMAKE_CXX_STANDARD 14)
+        register_definitions(RAJA_USE_CHAI)
+        set(ENABLE_RAJA_PLUGIN On CACHE BOOL "")
+        set(CHAI_ENABLE_RAJA_PLUGIN On CACHE BOOL "")
+        set(ENABLE_TESTS OFF CACHE BOOL "")
+        set(ENABLE_EXAMPLES OFF CACHE BOOL "")
+        set(ENABLE_REPRODUCERS OFF CACHE BOOL "")
+        set(ENABLE_EXERCISES OFF CACHE BOOL "")
+        set(ENABLE_DOCUMENTATION OFF CACHE BOOL "")
+        set(ENABLE_BENCHMARKS OFF CACHE BOOL "")
+        set(ENABLE_CUDA ${ENABLE_CUDA} CACHE BOOL "" FORCE)
+
+        if (ENABLE_CUDA)
+            if(POLICY CMP0104)
+                cmake_policy(SET CMP0104 OLD)
+            endif()
+            # RAJA needs all the cuda stuff setup before including!
+            set(CMAKE_CUDA_COMPILER ${CUDA_TOOLKIT_ROOT_DIR}/bin/nvcc)
+            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-forward-unknown-to-host-compiler -extended-lambda -arch=${CUDA_ARCH}" ${CUDA_EXTRA_FLAGS})
+            list(APPEND CMAKE_CUDA_FLAGS)
+            message(STATUS "NVCC flags: ${CMAKE_CUDA_FLAGS}")
+        endif ()
+
+        add_subdirectory(${CHAI_IN_TREE} ${CMAKE_BINARY_DIR}/chai)
+        register_link_library(CHAI)
+        # Reset binary directory like for RAJA just in case
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    elseif (EXISTS "${CHAI_IN_PACKAGE}")
+        register_definitions(RAJA_USE_CHAI)
+        message(STATUS "Building using packaged CHAI at `${CHAI_IN_PACKAGE}`")
+        find_package(CHAI REQUIRED)
+        register_link_library(CHAI)
+
+    elseif (EXISTS "${RAJA_IN_TREE}")
 
         message(STATUS "Building using in-tree RAJA source at `${RAJA_IN_TREE}`")
 
@@ -80,16 +125,15 @@ macro(setup)
         register_link_library(RAJA)
         # RAJA's cmake screws with where the binary will end up, resetting it here:
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    
+
     elseif (EXISTS "${RAJA_IN_PACKAGE}")
         message(STATUS "Building using packaged Raja at `${RAJA_IN_PACKAGE}`")
         find_package(RAJA REQUIRED)
         register_link_library(RAJA)
-    
-    else ()
-        message(FATAL_ERROR "Neither `${RAJA_IN_TREE}` or `${RAJA_IN_PACKAGE}` exists")
-    endif ()
 
+    else ()
+        message(FATAL_ERROR "Neither `${RAJA_IN_TREE}`, `${RAJA_IN_PACKAGE}`, `${CHAI_IN_TREE}`, or `${CHAI_IN_PACKAGE}` exists")
+    endif ()
 
     if (ENABLE_CUDA)
         # RAJA needs the codebase to be compiled with nvcc, so we tell cmake to treat sources as *.cu
@@ -97,7 +141,6 @@ macro(setup)
         set_source_files_properties(src/raja/RAJAStream.cpp PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
     endif ()
-
 
     register_append_compiler_and_arch_specific_cxx_flags(
             RAJA_FLAGS_CPU
