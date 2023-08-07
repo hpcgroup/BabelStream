@@ -11,7 +11,7 @@
 #include "RAJA/RAJA.hpp"
 
 #ifdef RAJA_USE_CHAI
-#include "CHAI/ManagedArray.hpp"
+#include <chai/ManagedArray.hpp>
 #endif
 
 #include "Stream.h"
