@@ -21,9 +21,7 @@ RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
 {
 
 #ifdef RAJA_USE_CHAI
-  std::cout << "Using CHAI. Starting allocations." << std::endl;
   d_a = new chai::ManagedArray<T>(array_size);
-  std::cout << "Using CHAI. A allocation complete." << std::endl;
   d_b = new chai::ManagedArray<T>(array_size);
   d_c = new chai::ManagedArray<T>(array_size);
   std::cout << "Using CHAI. All allocations complete." << std::endl;
