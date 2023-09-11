@@ -155,6 +155,7 @@ macro(setup)
     else ()
 
         # handle the vendor:arch value
+        register_definitions(OMP_TARGET_GPU)
         string(REPLACE ":" ";" OFFLOAD_TUPLE "${OFFLOAD}")
 
         list(LENGTH OFFLOAD_TUPLE LEN)
