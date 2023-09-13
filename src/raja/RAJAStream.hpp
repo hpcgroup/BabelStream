@@ -26,6 +26,10 @@
 
 typedef RAJA::omp_parallel_for_exec policy;
 typedef RAJA::omp_reduce reduce_policy;
+#elif RAJA_TARGET_AMD
+const size_t block_size = 128;
+typedef RAJA::hip_exec<block_size> policy;
+typedef RAJA::hip_reduce reduce_policy;
 #else
 const size_t block_size = 128;
 // TODO verify old and new templates are semantically equal
