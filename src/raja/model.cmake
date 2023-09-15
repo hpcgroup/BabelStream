@@ -1,21 +1,26 @@
-
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that is supported by CMake detection and RAJA.
          See https://raja.readthedocs.io/en/main/getting_started.html#build-and-install"
         "c++")
 
-register_flag_required(RAJA_IN_TREE
+register_flag_optional(RAJA_IN_TREE
         "Absolute path to the *source* distribution directory of RAJA.
          Make sure to use the release version of RAJA or clone RAJA recursively with submodules.
          Remember to append RAJA specific flags as well, for example:
-
              -DRAJA_IN_TREE=... -DENABLE_OPENMP=ON -DENABLE_CUDA=ON ...
-
          See https://github.com/LLNL/RAJA/blob/08cbbafd2d21589ebf341f7275c229412d0fe903/CMakeLists.txt#L44 for all available options
-")
+" "")
+
+register_flag_optional(RAJA_IN_PACKAGE
+        "Use if Raja is part of a package dependency:
+        Path to installation" "")
+
+register_flag_optional(CHAI_IN_PACKAGE
+        "Use if CHAI is part of a package dependency:
+        Path to installation. Overrides RAJA path." "")
 
 register_flag_optional(TARGET
-        "Target offload device, implemented values are CPU, NVIDIA"
+        "Target offload device, implemented values are CPU, NVIDIA, AMD"
         CPU)
 
 register_flag_optional(CUDA_TOOLKIT_ROOT_DIR
@@ -30,6 +35,10 @@ register_flag_optional(CUDA_EXTRA_FLAGS
         "[TARGET==NVIDIA only] Additional CUDA flags passed to nvcc, this is appended after `CUDA_ARCH`"
         "")
 
+register_flag_optional(BLT_DIR
+        "Provide BLT directory, needed for CHAI support on some systems"
+        "")
+
 # compiler vendor and arch specific flags
 set(RAJA_FLAGS_CPU_INTEL -qopt-streaming-stores=always)
 
@@ -38,10 +47,11 @@ macro(setup)
 
     if (${TARGET} STREQUAL "CPU")
         register_definitions(RAJA_TARGET_CPU)
+    elseif (${TARGET} STREQUAL "AMD")
+        register_definitions(RAJA_TARGET_AMD)
     else ()
-        register_definitions(RAJA_TARGET_GPU)
+        register_definitions(RAJA_TARGET_NVIDIA)
     endif ()
-
 
     if (EXISTS "${RAJA_IN_TREE}")
 
@@ -76,18 +86,39 @@ macro(setup)
         register_link_library(RAJA)
         # RAJA's cmake screws with where the binary will end up, resetting it here:
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    else ()
-        message(FATAL_ERROR "`${RAJA_IN_TREE}` does not exist")
-    endif ()
 
+    elseif (EXISTS "${RAJA_IN_PACKAGE}")
+        message(STATUS "Building using packaged Raja at `${RAJA_IN_PACKAGE}`")
+        find_package(RAJA REQUIRED)
+        register_link_library(RAJA)
+
+    else ()
+        message(FATAL_ERROR "Neither `${RAJA_IN_TREE}` or `${RAJA_IN_PACKAGE}` exists")
+    endif ()
 
     if (ENABLE_CUDA)
         # RAJA needs the codebase to be compiled with nvcc, so we tell cmake to treat sources as *.cu
         enable_language(CUDA)
+        find_package(CUDA REQUIRED)
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++17 -forward-unknown-to-host-compiler -arch=${CUDA_ARCH} -extended-lambda --expt-relaxed-constexpr -use_fast_math -restrict -keep ${CUDA_EXTRA_FLAGS}")
         set_source_files_properties(src/raja/RAJAStream.cpp PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
     endif ()
 
+    if (ENABLE_HIP)
+        find_package(hip REQUIRED)
+    endif ()
+
+    if (EXISTS "${CHAI_IN_PACKAGE}")
+        register_definitions(RAJA_USE_CHAI)
+        add_definitions(-DRAJA_USE_CHAI)
+        message(STATUS "Building using packaged CHAI at `${CHAI_IN_PACKAGE}`")
+        set(BLT_CXX_STD "c++14" CACHE STRING "")
+        include(${BLT_DIR}/SetupBLT.cmake)
+        find_package(umpire REQUIRED)
+        find_package(chai REQUIRED)
+        register_link_library(chai)
+    endif ()
 
     register_append_compiler_and_arch_specific_cxx_flags(
             RAJA_FLAGS_CPU

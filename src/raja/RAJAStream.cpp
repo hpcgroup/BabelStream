@@ -20,7 +20,12 @@ RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE), range(0, ARRAY_SIZE)
 {
 
-#ifdef RAJA_TARGET_CPU
+#ifdef RAJA_USE_CHAI
+  d_a = new chai::ManagedArray<T>(array_size);
+  d_b = new chai::ManagedArray<T>(array_size);
+  d_c = new chai::ManagedArray<T>(array_size);
+  std::cout << "Using CHAI. All allocations complete." << std::endl;
+#elif RAJA_TARGET_CPU
   d_a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
   d_b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
   d_c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
@@ -29,13 +34,18 @@ RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
   cudaMallocManaged((void**)&d_b, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
   cudaMallocManaged((void**)&d_c, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
   cudaDeviceSynchronize();
+  std::cout << "NOT using CHAI. Allocations complete." << std::endl;
 #endif
 }
 
 template <class T>
 RAJAStream<T>::~RAJAStream()
 {
-#ifdef RAJA_TARGET_CPU
+#ifdef RAJA_USE_CHAI
+  delete d_a;
+  delete d_b;
+  delete d_c;
+#elif RAJA_TARGET_CPU
   free(d_a);
   free(d_b);
   free(d_c);
@@ -49,9 +59,15 @@ RAJAStream<T>::~RAJAStream()
 template <class T>
 void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
 {
+#ifdef RAJA_USE_CHAI
+  chai::ManagedArray<T> a = *d_a;
+  chai::ManagedArray<T> b = *d_b;
+  chai::ManagedArray<T> c = *d_c;
+#else
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
+#endif
   forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     a[index] = initA;
@@ -64,16 +80,25 @@ template <class T>
 void RAJAStream<T>::read_arrays(
         std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
+#ifdef RAJA_USE_CHAI
+  return;
+#else
   std::copy(d_a, d_a + array_size, a.data());
   std::copy(d_b, d_b + array_size, b.data());
   std::copy(d_c, d_c + array_size, c.data());
+#endif
 }
 
 template <class T>
 void RAJAStream<T>::copy()
 {
+#ifdef RAJA_USE_CHAI
+  chai::ManagedArray<T> a = *d_a;
+  chai::ManagedArray<T> c = *d_c;
+#else
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT c = d_c;
+#endif
   forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index];
@@ -83,8 +108,13 @@ void RAJAStream<T>::copy()
 template <class T>
 void RAJAStream<T>::mul()
 {
+#ifdef RAJA_USE_CHAI
+  chai::ManagedArray<T> b = *d_b;
+  chai::ManagedArray<T> c = *d_c;
+#else
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
+#endif
   const T scalar = startScalar;
   forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
@@ -95,9 +125,15 @@ void RAJAStream<T>::mul()
 template <class T>
 void RAJAStream<T>::add()
 {
+#ifdef RAJA_USE_CHAI
+  chai::ManagedArray<T> a = *d_a;
+  chai::ManagedArray<T> b = *d_b;
+  chai::ManagedArray<T> c = *d_c;
+#else
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
+#endif
   forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index] + b[index];
@@ -107,9 +143,15 @@ void RAJAStream<T>::add()
 template <class T>
 void RAJAStream<T>::triad()
 {
+#ifdef RAJA_USE_CHAI
+  chai::ManagedArray<T> a = *d_a;
+  chai::ManagedArray<T> b = *d_b;
+  chai::ManagedArray<T> c = *d_c;
+#else
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
+#endif
   const T scalar = startScalar;
   forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
@@ -128,8 +170,13 @@ void RAJAStream<T>::nstream()
 template <class T>
 T RAJAStream<T>::dot()
 {
+#ifdef RAJA_USE_CHAI
+  chai::ManagedArray<T> a = *d_a;
+  chai::ManagedArray<T> b = *d_b;
+#else
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
+#endif
 
   RAJA::ReduceSum<reduce_policy, T> sum(0.0);
 
