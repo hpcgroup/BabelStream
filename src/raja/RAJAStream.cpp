@@ -178,7 +178,7 @@ T RAJAStream<T>::dot()
   T* RAJA_RESTRICT b = d_b;
 #endif
 
-  RAJA::ReduceSum<reduce_policy, T> sum(0.0);
+  RAJA::ReduceSum<reduce_policy, T> sum(T{});
 
   forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
