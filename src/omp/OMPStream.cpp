@@ -28,8 +28,10 @@ OMPStream<T>::OMPStream(const int ARRAY_SIZE, int device)
   T *b = this->b;
   T *c = this->c;
   // Set up data region on device
+  nvtxRangePush("Allocate memory on device");
   #pragma omp target enter data map(alloc: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+  nvtxRangePop();
 #endif
 
 }
@@ -43,8 +45,10 @@ OMPStream<T>::~OMPStream()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("Free memory on device");
   #pragma omp target exit data map(release: a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+  nvtxRangePop();
 #endif
   free(a);
   free(b);
@@ -59,6 +63,7 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("Init Kernel");
   #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
@@ -74,6 +79,7 @@ void OMPStream<T>::init_arrays(T initA, T initB, T initC)
   // a small copy to ensure blocking so that timing is correct
   #pragma omp target update from(a[0:0])
   #endif
+  nvtxRangePop();
 }
 
 template <class T>
@@ -84,9 +90,11 @@ void OMPStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("Data Movement: Device to Host");
   #pragma omp target update from(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 #endif
+  nvtxRangePop();
 
   #pragma omp parallel for
   for (int i = 0; i < array_size; i++)
@@ -105,6 +113,7 @@ void OMPStream<T>::copy()
   int array_size = this->array_size;
   T *a = this->a;
   T *c = this->c;
+  nvtxRangePush("Copy Kernel");
   #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
@@ -118,6 +127,7 @@ void OMPStream<T>::copy()
   // a small copy to ensure blocking so that timing is correct
   #pragma omp target update from(a[0:0])
   #endif
+  nvtxRangePop();
 }
 
 template <class T>
@@ -129,6 +139,7 @@ void OMPStream<T>::mul()
   int array_size = this->array_size;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("Mul Kernel");
   #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
@@ -142,6 +153,7 @@ void OMPStream<T>::mul()
   // a small copy to ensure blocking so that timing is correct
   #pragma omp target update from(c[0:0])
   #endif
+  nvtxRangePop();
 }
 
 template <class T>
@@ -152,6 +164,7 @@ void OMPStream<T>::add()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("Add Kernel");
   #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
@@ -165,6 +178,7 @@ void OMPStream<T>::add()
   // a small copy to ensure blocking so that timing is correct
   #pragma omp target update from(a[0:0])
   #endif
+  nvtxRangePop();
 }
 
 template <class T>
@@ -177,6 +191,7 @@ void OMPStream<T>::triad()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("Triad Kernel");
   #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
@@ -190,6 +205,7 @@ void OMPStream<T>::triad()
   // a small copy to ensure blocking so that timing is correct
   #pragma omp target update from(a[0:0])
   #endif
+  nvtxRangePop();
 }
 
 template <class T>
@@ -202,6 +218,7 @@ void OMPStream<T>::nstream()
   T *a = this->a;
   T *b = this->b;
   T *c = this->c;
+  nvtxRangePush("N Stream Kernel");
   #pragma omp target teams distribute parallel for simd
 #else
   #pragma omp parallel for
@@ -215,6 +232,7 @@ void OMPStream<T>::nstream()
   // a small copy to ensure blocking so that timing is correct
   #pragma omp target update from(a[0:0])
   #endif
+  nvtxRangePop();
 }
 
 template <class T>
@@ -226,6 +244,7 @@ T OMPStream<T>::dot()
   int array_size = this->array_size;
   T *a = this->a;
   T *b = this->b;
+  nvtxRangePush("Dot Kernel");
   #pragma omp target teams distribute parallel for simd map(tofrom: sum) reduction(+:sum)
 #else
   #pragma omp parallel for reduction(+:sum)
@@ -234,6 +253,7 @@ T OMPStream<T>::dot()
   {
     sum += a[i] * b[i];
   }
+  nvtxRangePop();
 
   return sum;
 }

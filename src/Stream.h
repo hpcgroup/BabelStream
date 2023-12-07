@@ -16,6 +16,10 @@
 #define startC (0.0)
 #define startScalar (0.4)
 
+#if defined(NVTX)
+  #include <nvtx3/nvtx3.hpp>
+#endif
+
 template <class T>
 class Stream
 {

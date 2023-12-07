@@ -141,6 +141,13 @@ if (FETCH_ONEDPL)
     endif ()
 endif ()
 
+option(ANNOTATIONS "Enable NVTX annotations" OFF)
+
+if (ANNOTATIONS)
+    include(${NVTX_SOURCE_DIR}/nvtxImportedTargets.cmake)
+    list(APPEND LINK_LIBRARIES nvtx3-cpp)
+    list(APPEND IMPL_DEFINITIONS NVTX)
+endif()
 
 # include our macros
 include(cmake/register_models.cmake)
