@@ -43,7 +43,7 @@ template <class T>
 void RAJAStream<T>::read_arrays(
         std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-#if defined(RAJA_ENABLE_CPU) || defined(RAJA_MANAGED_ALLOC)
+#if defined(RAJA_ENABLE_CPU) || defined(BABELSTREAM_MANAGED_ALLOC)
     std::copy(d_a, d_a + array_size, a.data())
     std::copy(d_b, d_b + array_size, b.data())
     std::copy(d_c, d_c + array_size, c.data())
