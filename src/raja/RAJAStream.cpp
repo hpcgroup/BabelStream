@@ -134,16 +134,14 @@ T RAJAStream<T>::dot()
 {
   T* a = d_a;
   T* b = d_b;
-  T sum = 0;
+  
+  RAJA::ReduceSum<reduce_policy, T> sum(T{});
 
-  RAJA::forall<exec_policy>(range,
-    RAJA::expt::Reduce<RAJA::operators::plus>(&sum),
-    [=] RAJA_DEVICE (int index, T &_sum) {
-      _sum += a[index] * b[index];
-    }
-  );
-    
-  return sum;
+  RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index) {
+    sum += a[index] * b[index];
+  });
+
+  return T(sum);
 }
 
 

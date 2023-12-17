@@ -21,17 +21,22 @@
 #if defined(RAJA_TARGET_CPU)
 #if defined(RAJA_ENABLE_OPENMP)
     using exec_policy = RAJA::omp_parallel_for_exec;
+    using reduce_policy = RAJA::omp_reduce;
 #else
     using exec_policy = RAJA::seq_exec;
+    using reduce_policy = RAJA::seq_reduce;
 #endif
 #else
     const size_t block_size = 256;
 #if defined(RAJA_ENABLE_CUDA)
     using exec_policy = RAJA::cuda_exec<block_size>;
+    using reduce_policy = RAJA::cuda_reduce;
 #elif defined(RAJA_ENABLE_HIP)
     using exec_policy = RAJA::hip_exec<block_size>;
+    using reduce_policy = RAJA::hip_reduce;
 #elif defined(RAJA_ENABLE_SYCL)
     using exec_policy = RAJA::sycl_exec<block_size>;
+    using reduce_policy = RAJA::sycl_reduce;
 #endif
 #endif
 
