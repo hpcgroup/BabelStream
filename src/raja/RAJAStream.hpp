@@ -8,41 +8,31 @@
 
 #include <iostream>
 #include <stdexcept>
+
 #include "RAJA/RAJA.hpp"
+#include "umpire/Allocator.hpp"
+#include "umpire/ResourceManager.hpp"
 
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "RAJA"
 
-#ifdef RAJA_TARGET_CPU
-// TODO verify old and new templates are semantically equal
-//typedef RAJA::ExecPolicy<
-//        RAJA::seq_segit,
-//        RAJA::omp_parallel_for_exec> policy;
-
-typedef RAJA::omp_parallel_for_exec policy;
-typedef RAJA::omp_reduce reduce_policy;
+#if defined(RAJA_ENABLE_CUDA)
+using exec_policy = RAJA::cuda_exec<256>;
+#elif defined(RAJA_ENABLE_HIP)
+using exec_policy = RAJA::hip_exec<256>;
+#elif defined(RAJA_ENABLE_OPENMP)
+using exec_policy = RAJA::omp_parallel_for_exec;
 #else
-const size_t block_size = 128;
-// TODO verify old and new templates are semantically equal
-//typedef RAJA::IndexSet::ExecPolicy<
-//        RAJA::seq_segit,
-//        RAJA::cuda_exec<block_size>> policy;
-//typedef RAJA::cuda_reduce<block_size> reduce_policy;
-typedef RAJA::cuda_exec<block_size> policy;
-typedef RAJA::cuda_reduce reduce_policy;
+using exec_policy = RAJA::seq_exec;
 #endif
 
-using RAJA::RangeSegment;
-
-
 template <class T>
-class RAJAStream : public Stream<T>
-{
+class RAJAStream : public Stream<T> {
   protected:
     // Size of arrays
 	const int array_size;
-	const RangeSegment range;
+	const RAJA::TypedRangeSegment<int> range;
 
     // Device side pointers to arrays
     T* d_a;
@@ -50,7 +40,6 @@ class RAJAStream : public Stream<T>
     T* d_c;
 
   public:
-
     RAJAStream(const int, const int);
     ~RAJAStream();
 

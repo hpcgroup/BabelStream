@@ -9,12 +9,6 @@
 #include <stdexcept>
 #include "RAJAStream.hpp"
 
-using RAJA::forall;
-
-#ifndef ALIGNMENT
-#define ALIGNMENT (2*1024*1024) // 2MB
-#endif
-
 template <class T>
 RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE), range(0, ARRAY_SIZE)
@@ -52,8 +46,7 @@ void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
+  RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index) {
     a[index] = initA;
     b[index] = initB;
     c[index] = initC;
@@ -74,7 +67,7 @@ void RAJAStream<T>::copy()
 {
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
+  RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index];
   });
@@ -86,7 +79,7 @@ void RAJAStream<T>::mul()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
+  RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     b[index] = scalar*c[index];
   });
@@ -98,7 +91,7 @@ void RAJAStream<T>::add()
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
+  RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index] + b[index];
   });
@@ -111,7 +104,7 @@ void RAJAStream<T>::triad()
   T* RAJA_RESTRICT b = d_b;
   T* RAJA_RESTRICT c = d_c;
   const T scalar = startScalar;
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
+  RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -130,15 +123,16 @@ T RAJAStream<T>::dot()
 {
   T* RAJA_RESTRICT a = d_a;
   T* RAJA_RESTRICT b = d_b;
+  T sum = 0;
 
-  RAJA::ReduceSum<reduce_policy, T> sum(T{});
-
-  forall<policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
-  {
-    sum += a[index] * b[index];
-  });
-
-  return T(sum);
+  RAJA::forall<exec_policy>(range,
+    RAJA::expt::Reduce<RAJA::operators::plus>(&sum),
+    [=] RAJA_DEVICE (int index, T &_sum) {
+      _sum += a[index] * b[index];
+    }
+  );
+    
+  return sum;
 }
 
 
