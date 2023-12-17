@@ -14,10 +14,6 @@
 #include "umpire/ResourceManager.hpp"
 #include "umpire/TypedAllocator.hpp"
 
-#ifdef RAJA_USE_CHAI
-#include <chai/ManagedArray.hpp>
-#endif
-
 #include "Stream.h"
 
 #define IMPLEMENTATION_STRING "RAJA"
@@ -55,7 +51,7 @@ class RAJAStream : public Stream<T> {
 
     // Umpire Allocators
     umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
-#if defined(RAJA_ENABLE_CPU)
+#if defined(RAJA_TARGET_CPU)
     umpire::Allocator alloc = rm.getAllocator("HOST");
 #else
 #if defined(RAJA_MANAGED_ALLOC)
@@ -65,16 +61,9 @@ class RAJAStream : public Stream<T> {
 #endif
 #endif
 
-    // Device side pointers to arrays
-#ifdef RAJA_USE_CHAI
-    chai::ManagedArray<T>* d_a;
-    chai::ManagedArray<T>* d_b;
-    chai::ManagedArray<T>* d_c;
-#else
     T* d_a;
     T* d_b;
     T* d_c;
-#endif
 
   public:
     RAJAStream(const int, const int);
