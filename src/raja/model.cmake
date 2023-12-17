@@ -1,5 +1,7 @@
 register_flag_required(RAJA_BACK_END "Specify whether we target CPU/CUDA/HIP/SYCL")
 
+register_flag_optional(MANAGED_ALLOC "Use UM instead of device-only allocation" "OFF")
+
 macro(setup)
     if (POLICY CMP0104)
         cmake_policy(SET CMP0104 OLD)
@@ -29,5 +31,9 @@ macro(setup)
     else()
         register_definitions(RAJA_TARGET_CPU)
         message(STATUS "Falling Back to CPU Exection Policy")
+    endif ()
+
+    if (MANAGED_ALLOC)
+        register_definitions(RAJA_MANAGED_ALLOC)
     endif ()
 endmacro()

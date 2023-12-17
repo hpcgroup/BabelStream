@@ -48,7 +48,11 @@ class RAJAStream : public Stream<T> {
 #if defined(RAJA_ENABLE_CPU)
     umpire::Allocator alloc = rm.getAllocator("HOST");
 #else
+#if defined(RAJA_MANAGED_ALLOC)
+    umpire::Allocator alloc = rm.getAllocator("UM");
+#else
     umpire::Allocator alloc = rm.getAllocator("DEVICE");
+#endif
 #endif
 
     // Device side pointers to arrays
