@@ -6,6 +6,7 @@ register_flag_optional(CMAKE_CXX_COMPILER
 register_flag_optional(TARGET_DEVICE
         "[PGI/NVHPC only] This sets the `-target` flag, possible values are:
              gpu       - Globally set the target device to an NVIDIA GPU
+             amd       - Globally set the target device to an AMD GPU
              multicore - Globally set the target device to the host CPU
          Refer to `nvc++ --help` for the full list"
         "")
@@ -44,34 +45,39 @@ register_flag_optional(TARGET_PROCESSOR
         "")
 
 macro(setup)
-    find_package(OpenACC REQUIRED)
+    if (${TARGET_DEVICE} STREQUAL "amd")
+        register_append_cxx_flags(ANY "-fopenacc;-Wno-openacc-and-cxx")
+        register_append_link_flags("-fopenacc;-Wno-openacc-and-cxx")
+    else ()
+        find_package(OpenACC REQUIRED)
 
-    if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
-        # CMake didn't really implement ACC as a target before 3.16, so we append them manually
-        separate_arguments(OpenACC_CXX_FLAGS)
-        register_append_cxx_flags(ANY ${OpenACC_CXX_FLAGS})
-        register_append_link_flags(${OpenACC_CXX_FLAGS})
-    else()
-        register_link_library(OpenACC::OpenACC_CXX)
-    endif()
+        if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
+            # CMake didn't really implement ACC as a target before 3.16, so we append them manually
+            separate_arguments(OpenACC_CXX_FLAGS)
+            register_append_cxx_flags(ANY ${OpenACC_CXX_FLAGS})
+            register_append_link_flags(${OpenACC_CXX_FLAGS})
+        else()
+            register_link_library(OpenACC::OpenACC_CXX)
+        endif()
 
 
-    register_definitions(restrict=__restrict)
-    # XXX NVHPC is really new so older Cmake thinks it's PGI, which is true
-    if ((CMAKE_CXX_COMPILER_ID STREQUAL PGI) OR (CMAKE_CXX_COMPILER_ID STREQUAL NVHPC))
+        register_definitions(restrict=__restrict)
+        # XXX NVHPC is really new so older Cmake thinks it's PGI, which is true
+        if ((CMAKE_CXX_COMPILER_ID STREQUAL PGI) OR (CMAKE_CXX_COMPILER_ID STREQUAL NVHPC))
 
-        if (TARGET_DEVICE)
-            register_append_cxx_flags(ANY -target=${TARGET_DEVICE})
+            if (TARGET_DEVICE)
+                register_append_cxx_flags(ANY -target=${TARGET_DEVICE})
+            endif ()
+
+            if (CUDA_ARCH)
+                register_append_cxx_flags(ANY -gpu=${CUDA_ARCH})
+            endif ()
+
+            if (TARGET_PROCESSOR)
+                register_append_cxx_flags(ANY -tp=${TARGET_PROCESSOR})
+            endif ()
+
         endif ()
-
-        if (CUDA_ARCH)
-            register_append_cxx_flags(ANY -gpu=${CUDA_ARCH})
-        endif ()
-
-        if (TARGET_PROCESSOR)
-            register_append_cxx_flags(ANY -tp=${TARGET_PROCESSOR})
-        endif ()
-
     endif ()
 
 endmacro()
