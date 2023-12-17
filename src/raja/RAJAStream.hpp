@@ -51,7 +51,7 @@ class RAJAStream : public Stream<T> {
 
     // Umpire Allocators
     umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
-#if defined(RAJA_ENABLE_CPU)
+#if defined(RAJA_TARGET_CPU)
     umpire::Allocator alloc = rm.getAllocator("HOST");
 #else
 #if defined(RAJA_MANAGED_ALLOC)
