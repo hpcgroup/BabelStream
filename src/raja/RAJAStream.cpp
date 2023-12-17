@@ -13,39 +13,25 @@ template <class T>
 RAJAStream<T>::RAJAStream(const int ARRAY_SIZE, const int device_index)
     : array_size(ARRAY_SIZE), range(0, ARRAY_SIZE)
 {
-
-#ifdef RAJA_TARGET_CPU
-  d_a = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  d_b = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-  d_c = (T*)aligned_alloc(ALIGNMENT, sizeof(T)*array_size);
-#else
-  cudaMallocManaged((void**)&d_a, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
-  cudaMallocManaged((void**)&d_b, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
-  cudaMallocManaged((void**)&d_c, sizeof(T)*ARRAY_SIZE, cudaMemAttachGlobal);
-  cudaDeviceSynchronize();
-#endif
+    d_a = static_cast<T*>(alloc.allocate(sizeof(T) * array_size));
+    d_b = static_cast<T*>(alloc.allocate(sizeof(T) * array_size));
+    d_c = static_cast<T*>(alloc.allocate(sizeof(T) * array_size));
 }
 
 template <class T>
 RAJAStream<T>::~RAJAStream()
 {
-#ifdef RAJA_TARGET_CPU
-  free(d_a);
-  free(d_b);
-  free(d_c);
-#else
-  cudaFree(d_a);
-  cudaFree(d_b);
-  cudaFree(d_c);
-#endif
+    rm.getAllocator(d_a).deallocate(d_a);
+    rm.getAllocator(d_b).deallocate(d_b);
+    rm.getAllocator(d_c).deallocate(d_c);
 }
 
 template <class T>
 void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
 {
-  T* RAJA_RESTRICT a = d_a;
-  T* RAJA_RESTRICT b = d_b;
-  T* RAJA_RESTRICT c = d_c;
+  T* a = d_a;
+  T* b = d_b;
+  T* c = d_c;
   RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index) {
     a[index] = initA;
     b[index] = initB;
@@ -57,16 +43,25 @@ template <class T>
 void RAJAStream<T>::read_arrays(
         std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-  std::copy(d_a, d_a + array_size, a.data());
-  std::copy(d_b, d_b + array_size, b.data());
-  std::copy(d_c, d_c + array_size, c.data());
+    umpire::Allocator alloc = rm.getAllocator("HOST");
+    T *h_a = static_cast<T*>(alloc.allocate(sizeof(T) * array_size));
+    T *h_b = static_cast<T*>(alloc.allocate(sizeof(T) * array_size));
+    T *h_c = static_cast<T*>(alloc.allocate(sizeof(T) * array_size));
+
+    rm.copy(h_a, d_a);
+    rm.copy(h_b, d_b);
+    rm.copy(h_c, d_c);
+
+    std::copy(h_a, h_a + array_size, a.data());
+    std::copy(h_b, h_b + array_size, b.data());
+    std::copy(h_c, h_c + array_size, c.data());
 }
 
 template <class T>
 void RAJAStream<T>::copy()
 {
-  T* RAJA_RESTRICT a = d_a;
-  T* RAJA_RESTRICT c = d_c;
+  T* a = d_a;
+  T* c = d_c;
   RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index];
@@ -76,8 +71,8 @@ void RAJAStream<T>::copy()
 template <class T>
 void RAJAStream<T>::mul()
 {
-  T* RAJA_RESTRICT b = d_b;
-  T* RAJA_RESTRICT c = d_c;
+  T* b = d_b;
+  T* c = d_c;
   const T scalar = startScalar;
   RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
@@ -88,9 +83,9 @@ void RAJAStream<T>::mul()
 template <class T>
 void RAJAStream<T>::add()
 {
-  T* RAJA_RESTRICT a = d_a;
-  T* RAJA_RESTRICT b = d_b;
-  T* RAJA_RESTRICT c = d_c;
+  T* a = d_a;
+  T* b = d_b;
+  T* c = d_c;
   RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index] + b[index];
@@ -100,9 +95,9 @@ void RAJAStream<T>::add()
 template <class T>
 void RAJAStream<T>::triad()
 {
-  T* RAJA_RESTRICT a = d_a;
-  T* RAJA_RESTRICT b = d_b;
-  T* RAJA_RESTRICT c = d_c;
+  T* a = d_a;
+  T* b = d_b;
+  T* c = d_c;
   const T scalar = startScalar;
   RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index)
   {
@@ -121,8 +116,8 @@ void RAJAStream<T>::nstream()
 template <class T>
 T RAJAStream<T>::dot()
 {
-  T* RAJA_RESTRICT a = d_a;
-  T* RAJA_RESTRICT b = d_b;
+  T* a = d_a;
+  T* b = d_b;
   T sum = 0;
 
   RAJA::forall<exec_policy>(range,

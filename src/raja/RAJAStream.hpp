@@ -17,15 +17,24 @@
 
 #define IMPLEMENTATION_STRING "RAJA"
 
-#if defined(RAJA_ENABLE_CUDA)
-using exec_policy = RAJA::cuda_exec<256>;
-#elif defined(RAJA_ENABLE_HIP)
-using exec_policy = RAJA::hip_exec<256>;
-#elif defined(RAJA_ENABLE_OPENMP)
-using exec_policy = RAJA::omp_parallel_for_exec;
+#if defined(RAJA_TARGET_CPU)
+#if defined(RAJA_ENABLE_OPENMP)
+    using exec_policy = RAJA::omp_parallel_for_exec;
 #else
-using exec_policy = RAJA::seq_exec;
+    using exec_policy = RAJA::seq_exec;
 #endif
+#else
+    const size_t block_size = 256;
+#if defined(RAJA_ENABLE_CUDA)
+    using exec_policy = RAJA::cuda_exec<block_size>;
+#elif defined(RAJA_ENABLE_HIP)
+    using exec_policy = RAJA::hip_exec<block_size>;
+#elif defined(RAJA_ENABLE_SYCL)
+    using exec_policy = RAJA::sycl_exec<block_size>;
+#endif
+#endif
+
+
 
 template <class T>
 class RAJAStream : public Stream<T> {
@@ -33,6 +42,14 @@ class RAJAStream : public Stream<T> {
     // Size of arrays
 	const int array_size;
 	const RAJA::TypedRangeSegment<int> range;
+
+    // Umpire Allocators
+    umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
+#if defined(RAJA_ENABLE_CPU)
+    umpire::Allocator alloc = rm.getAllocator("HOST");
+#else
+    umpire::Allocator alloc = rm.getAllocator("DEVICE");
+#endif
 
     // Device side pointers to arrays
     T* d_a;
