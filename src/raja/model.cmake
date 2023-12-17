@@ -20,7 +20,7 @@ macro(setup)
 
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -forward-unknown-to-host-compiler -arch=sm_80 -extended-lambda --expt-relaxed-constexpr -restrict -keep")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -extended-lambda --expt-relaxed-constexpr --restrict --keep")
         register_definitions(RAJA_TARGET_GPU)
     elseif (${RAJA_BACK_END} STREQUAL "HIP")
         register_definitions(RAJA_TARGET_GPU)
