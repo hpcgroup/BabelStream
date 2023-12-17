@@ -118,9 +118,15 @@ void RAJAStream<T>::triad()
 template <class T>
 void RAJAStream<T>::nstream()
 {
-  // TODO implement me!
-  std::cerr << "Not implemented yet!" << std::endl;
-  throw std::runtime_error("Not implemented yet!");
+    T* a = d_a;
+    T* b = d_b;
+    T* c = d_c;
+    const T scalar = startScalar;
+
+    RAJA::forall<exec_policy>(range, [=] RAJA_DEVICE (RAJA::Index_type index) {
+      a[index] += b[index] + scalar * c[index];
+      }
+    );
 }
 
 template <class T>
