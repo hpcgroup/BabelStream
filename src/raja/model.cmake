@@ -33,6 +33,6 @@ macro(setup)
     endif ()
 
     if (MANAGED_ALLOC)
-        register_definitions(RAJA_MANAGED_ALLOC)
+        register_definitions(BABELSTREAM_MANAGED_ALLOC)
     endif ()
 endmacro()

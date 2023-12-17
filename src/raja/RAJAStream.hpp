@@ -54,7 +54,7 @@ class RAJAStream : public Stream<T> {
 #if defined(RAJA_TARGET_CPU)
     umpire::Allocator alloc = rm.getAllocator("HOST");
 #else
-#if defined(RAJA_MANAGED_ALLOC)
+#if defined(BABELSTREAM_MANAGED_ALLOC)
     umpire::Allocator alloc = rm.getAllocator("UM");
 #else
     umpire::Allocator alloc = rm.getAllocator("DEVICE");
