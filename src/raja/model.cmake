@@ -1,4 +1,4 @@
-register_flag_required(RAJA_BACK_END "Specify whether we target CPU/CUDA/HIP/SYCL")
+register_flag_optional(RAJA_BACK_END "Specify whether we target CPU/CUDA/HIP/SYCL" "CPU")
 
 register_flag_optional(MANAGED_ALLOC "Use UM instead of device-only allocation" "OFF")
 
@@ -27,11 +27,9 @@ macro(setup)
         register_definitions(RAJA_TARGET_GPU)
     elseif (${RAJA_BACK_END} STREQUAL "SYCL")
         register_definitions(RAJA_TARGET_GPU)
-    elseif (${RAJA_BACK_END} STREQUAL "OpenMP")
-        register_definitions(RAJA_TARGET_CPU)
     else()
         register_definitions(RAJA_TARGET_CPU)
-        message(STATUS "Falling Back to CPU Exection Policy")
+        message(STATUS "Falling Back to CPU")
     endif ()
 
     if (MANAGED_ALLOC)
