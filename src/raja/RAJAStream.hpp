@@ -12,6 +12,7 @@
 #include "RAJA/RAJA.hpp"
 #include "umpire/Allocator.hpp"
 #include "umpire/ResourceManager.hpp"
+#include "umpire/TypedAllocator.hpp"
 
 #include "Stream.h"
 
