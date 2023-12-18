@@ -203,9 +203,9 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-    queue->memcpy(std::data(h_a), a, sizeof(T) * array_size);
-    queue->memcpy(std::data(h_b), b, sizeof(T) * array_size);
-    queue->memcpy(std::data(h_c), c, sizeof(T) * array_size);
+  queue->memcpy(std::data(h_a), a, sizeof(T) * array_size);
+  queue->memcpy(std::data(h_b), b, sizeof(T) * array_size);
+  queue->memcpy(std::data(h_c), c, sizeof(T) * array_size);
 }
 
 void getDeviceList(void)
