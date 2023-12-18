@@ -157,6 +157,7 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
+  T h_sum = 0;
   queue->submit([&](sycl::handler &cgh)
   {
     cgh.parallel_for(sycl::range<1>{array_size},
@@ -174,7 +175,12 @@ T SYCLStream<T>::dot()
 
   });
   queue->wait();
-  return *sum;
+
+#if defined(BABELSTREAM_MANAGED_ALLOC)
+  queue->memcpy(&h_sum, sum, sizeof(T));
+  return h_sum;
+#else
+  return sum;
 }
 
 template <class T>
