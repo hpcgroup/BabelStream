@@ -176,11 +176,11 @@ T SYCLStream<T>::dot()
   });
   queue->wait();
 
-#if !defined(BABELSTREAM_MANAGED_ALLOC)
+#if defined(BABELSTREAM_MANAGED_ALLOC)
+  return *sum;
+#else
   queue->memcpy(&h_sum, sum, sizeof(T));
   return h_sum;
-#else
-  return *sum;
 #endif
 }
 
