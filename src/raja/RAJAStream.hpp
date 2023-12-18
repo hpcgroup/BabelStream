@@ -40,30 +40,28 @@
 #endif
 #endif
 
-
-
 template <class T>
 class RAJAStream : public Stream<T> {
   protected:
     // Size of arrays
-	const int array_size;
-	const RAJA::TypedRangeSegment<int> range;
+  const int array_size;
+  const RAJA::TypedRangeSegment<int> range;
 
     // Umpire Allocators
-    umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
+  umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
 #if defined(RAJA_TARGET_CPU)
-    umpire::Allocator alloc = rm.getAllocator("HOST");
+  umpire::Allocator alloc = rm.getAllocator("HOST");
 #else
 #if defined(BABELSTREAM_MANAGED_ALLOC)
-    umpire::Allocator alloc = rm.getAllocator("UM");
+  umpire::Allocator alloc = rm.getAllocator("UM");
 #else
-    umpire::Allocator alloc = rm.getAllocator("DEVICE");
+  umpire::Allocator alloc = rm.getAllocator("DEVICE");
 #endif
 #endif
 
-    T* d_a;
-    T* d_b;
-    T* d_c;
+  T* d_a;
+  T* d_b;
+  T* d_c;
 
   public:
     RAJAStream(const int, const int);
