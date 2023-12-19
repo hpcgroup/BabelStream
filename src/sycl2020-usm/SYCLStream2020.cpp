@@ -60,16 +60,21 @@ SYCLStream<T>::SYCLStream(const size_t ARRAY_SIZE, const int device_index)
     }
   }});
 
+#if defined(BABELSTREAM_MANAGED_ALLOC)
   a = sycl::malloc_shared<T>(array_size, *queue);
   b = sycl::malloc_shared<T>(array_size, *queue);
   c = sycl::malloc_shared<T>(array_size, *queue);
   sum = sycl::malloc_shared<T>(1, *queue);
+#else
+  a = sycl::malloc_device<T>(array_size, *queue);
+  b = sycl::malloc_device<T>(array_size, *queue);
+  c = sycl::malloc_device<T>(array_size, *queue);
+  sum = sycl::malloc_device<T>(1, *queue);
+#endif
 
   // No longer need list of devices
   devices.clear();
   cached = true;
-
-
 }
 
 template<class T>
@@ -152,6 +157,7 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
+  T h_sum = 0;
   queue->submit([&](sycl::handler &cgh)
   {
     cgh.parallel_for(sycl::range<1>{array_size},
@@ -169,7 +175,13 @@ T SYCLStream<T>::dot()
 
   });
   queue->wait();
+
+#if defined(BABELSTREAM_MANAGED_ALLOC)
   return *sum;
+#else
+  queue->memcpy(&h_sum, sum, sizeof(T));
+  return h_sum;
+#endif
 }
 
 template <class T>
@@ -191,12 +203,9 @@ void SYCLStream<T>::init_arrays(T initA, T initB, T initC)
 template <class T>
 void SYCLStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::vector<T>& h_c)
 {
-  for (int i = 0; i < array_size; i++)
-  {
-    h_a[i] = a[i];
-    h_b[i] = b[i];
-    h_c[i] = c[i];
-  }
+  queue->memcpy(std::data(h_a), a, sizeof(T) * array_size);
+  queue->memcpy(std::data(h_b), b, sizeof(T) * array_size);
+  queue->memcpy(std::data(h_c), c, sizeof(T) * array_size);
 }
 
 void getDeviceList(void)

@@ -19,6 +19,7 @@ register_flag_optional(SYCL_COMPILER_DIR
            HIPSYCL|DPCPP|COMPUTECPP - set to the root of the binary distribution that contains at least `bin/`, `include/`, and `lib/`"
         "")
 
+register_flag_optional(MANAGED_ALLOC "Use UM instead of device-only allocation" "OFF")
 
 macro(setup)
     set(CMAKE_CXX_STANDARD 17)
@@ -73,6 +74,10 @@ macro(setup)
         register_append_link_flags(-fsycl)
     else ()
         message(FATAL_ERROR "SYCL_COMPILER=${SYCL_COMPILER} is unsupported")
+    endif ()
+
+    if (MANAGED_ALLOC)
+        register_definitions(BABELSTREAM_MANAGED_ALLOC)
     endif ()
 
 endmacro()
