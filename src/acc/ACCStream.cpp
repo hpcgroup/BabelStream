@@ -70,6 +70,10 @@ void ACCStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
   T *c = this->c;
   #pragma acc update host(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+
+  std::copy(a, a + array_size, h_a.data());
+  std::copy(b, b + array_size, h_b.data());
+  std::copy(c, c + array_size, h_c.data());
 }
 
 template <class T>
