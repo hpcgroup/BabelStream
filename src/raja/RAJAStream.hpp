@@ -12,13 +12,14 @@
 #include "RAJA/RAJA.hpp"
 #include "umpire/Allocator.hpp"
 #include "umpire/ResourceManager.hpp"
-#include "umpire/TypedAllocator.hpp"
+#include "umpire/strategy/AlignedAllocator.hpp"
 
 #include "Stream.h"
 
 #define TBSIZE 1024
 
 #define IMPLEMENTATION_STRING "RAJA"
+#define ALIGNMENT (2*1024*1024) // 2MB
 
 #if defined(RAJA_TARGET_CPU)
 #if defined(RAJA_ENABLE_OPENMP)
@@ -51,7 +52,8 @@ class RAJAStream : public Stream<T> {
     // Umpire Allocators
   umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
 #if defined(RAJA_TARGET_CPU)
-  umpire::Allocator alloc = rm.getAllocator("HOST");
+  umpire::Allocator alloc = rm.makeAllocator<umpire::strategy::AlignedAllocator>("aligned_allocator", rm.getAllocator("HOST"), ALIGNMENT);
+
 #else
 #if defined(BABELSTREAM_MANAGED_ALLOC)
   umpire::Allocator alloc = rm.getAllocator("UM");
