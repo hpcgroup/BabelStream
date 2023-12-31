@@ -5,6 +5,7 @@ register_flag_optional(CMAKE_CXX_COMPILER
 register_flag_optional(TARGET_DEVICE
         "[PGI/NVHPC only] This sets the `-target` flag, possible values are:
              gpu       - Globally set the target device to an NVIDIA GPU
+             amd       - Globally set the target device to an AMD GPU
              multicore - Globally set the target device to the host CPU
          Refer to `nvc++ --help` for the full list"
         "")
@@ -57,7 +58,6 @@ macro(setup)
     else()
         register_link_library(OpenACC::OpenACC_CXX)
     endif()
-
 
     register_definitions(restrict=__restrict)
     # XXX NVHPC is really new so older Cmake thinks it's PGI, which is true

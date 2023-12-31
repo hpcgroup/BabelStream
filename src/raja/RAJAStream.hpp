@@ -8,49 +8,65 @@
 
 #include <iostream>
 #include <stdexcept>
+
 #include "RAJA/RAJA.hpp"
+#include "umpire/Allocator.hpp"
+#include "umpire/ResourceManager.hpp"
+#include "umpire/strategy/AlignedAllocator.hpp"
 
 #include "Stream.h"
 
+#define TBSIZE 1024
+
 #define IMPLEMENTATION_STRING "RAJA"
+#define ALIGNMENT (2*1024*1024) // 2MB
 
-#ifdef RAJA_TARGET_CPU
-// TODO verify old and new templates are semantically equal
-//typedef RAJA::ExecPolicy<
-//        RAJA::seq_segit,
-//        RAJA::omp_parallel_for_exec> policy;
-
-typedef RAJA::omp_parallel_for_exec policy;
-typedef RAJA::omp_reduce reduce_policy;
+#if defined(RAJA_TARGET_CPU)
+#if defined(RAJA_ENABLE_OPENMP)
+    using exec_policy = RAJA::omp_parallel_for_exec;
+    using reduce_policy = RAJA::omp_reduce;
 #else
-const size_t block_size = 128;
-// TODO verify old and new templates are semantically equal
-//typedef RAJA::IndexSet::ExecPolicy<
-//        RAJA::seq_segit,
-//        RAJA::cuda_exec<block_size>> policy;
-//typedef RAJA::cuda_reduce<block_size> reduce_policy;
-typedef RAJA::cuda_exec<block_size> policy;
-typedef RAJA::cuda_reduce reduce_policy;
+    using exec_policy = RAJA::seq_exec;
+    using reduce_policy = RAJA::seq_reduce;
+#endif
+#else
+#if defined(RAJA_ENABLE_CUDA)
+    using exec_policy = RAJA::cuda_exec<TBSIZE>;
+    using reduce_policy = RAJA::cuda_reduce;
+#elif defined(RAJA_ENABLE_HIP)
+    using exec_policy = RAJA::hip_exec<TBSIZE>;
+    using reduce_policy = RAJA::hip_reduce;
+#elif defined(RAJA_ENABLE_SYCL)
+    using exec_policy = RAJA::sycl_exec<TBSIZE>;
+    using reduce_policy = RAJA::sycl_reduce;
+#endif
 #endif
 
-using RAJA::RangeSegment;
-
-
 template <class T>
-class RAJAStream : public Stream<T>
-{
+class RAJAStream : public Stream<T> {
   protected:
     // Size of arrays
-	const int array_size;
-	const RangeSegment range;
+  const int array_size;
+  const RAJA::TypedRangeSegment<int> range;
 
-    // Device side pointers to arrays
-    T* d_a;
-    T* d_b;
-    T* d_c;
+    // Umpire Allocators
+  umpire::ResourceManager &rm = umpire::ResourceManager::getInstance();
+#if defined(RAJA_TARGET_CPU)
+  umpire::Allocator alloc = rm.makeAllocator<umpire::strategy::AlignedAllocator>("aligned_allocator", rm.getAllocator("HOST"), ALIGNMENT);
+
+#else
+#if defined(BABELSTREAM_MANAGED_ALLOC)
+  umpire::Allocator alloc = rm.getAllocator("UM");
+#else
+  umpire::Allocator alloc = rm.getAllocator("DEVICE");
+#endif
+#endif
+
+  T* d_a;
+  T* d_b;
+  T* d_c;
 
   public:
-
     RAJAStream(const int, const int);
     ~RAJAStream();
 
@@ -58,11 +74,10 @@ class RAJAStream : public Stream<T>
     virtual void add() override;
     virtual void mul() override;
     virtual void triad() override;
-	virtual void nstream() override;
-	virtual T dot() override;
+    virtual void nstream() override;
+    virtual T dot() override;
 
     virtual void init_arrays(T initA, T initB, T initC) override;
     virtual void read_arrays(
             std::vector<T>& a, std::vector<T>& b, std::vector<T>& c) override;
 };
-
