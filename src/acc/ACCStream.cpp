@@ -20,10 +20,6 @@ ACCStream<T>::ACCStream(const int ARRAY_SIZE, int device)
   this->b = new T[array_size];
   this->c = new T[array_size];
 
-  T * restrict a = this->a;
-  T * restrict b = this->b;
-  T * restrict c = this->c;
-
   #pragma acc enter data create(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
 }
@@ -32,8 +28,6 @@ template <class T>
 ACCStream<T>::~ACCStream()
 {
   // End data region on device
-  int array_size = this->array_size;
-
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
@@ -53,7 +47,7 @@ void ACCStream<T>::init_arrays(T initA, T initB, T initC)
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector present(a[0:array_size], b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     a[i] = initA;
@@ -70,6 +64,10 @@ void ACCStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::ve
   T *c = this->c;
   #pragma acc update host(a[0:array_size], b[0:array_size], c[0:array_size])
   {}
+
+  std::copy(a, a + array_size, h_a.data());
+  std::copy(b, b + array_size, h_b.data());
+  std::copy(c, c + array_size, h_c.data());
 }
 
 template <class T>
@@ -78,7 +76,7 @@ void ACCStream<T>::copy()
   int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict c = this->c;
-  #pragma acc parallel loop present(a[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector present(a[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i];
@@ -93,7 +91,7 @@ void ACCStream<T>::mul()
   int array_size = this->array_size;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc parallel loop present(b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector present(b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     b[i] = scalar * c[i];
@@ -107,7 +105,7 @@ void ACCStream<T>::add()
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector present(a[0:array_size], b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     c[i] = a[i] + b[i];
@@ -123,7 +121,7 @@ void ACCStream<T>::triad()
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc parallel loop present(a[0:array_size], b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector present(a[0:array_size], b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     a[i] = b[i] + scalar * c[i];
@@ -139,7 +137,7 @@ void ACCStream<T>::nstream()
   T * restrict a = this->a;
   T * restrict b = this->b;
   T * restrict c = this->c;
-  #pragma acc parallel loop present(a[0:array_size],  b[0:array_size], c[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector present(a[0:array_size],  b[0:array_size], c[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     a[i] += b[i] + scalar * c[i];
@@ -154,7 +152,7 @@ T ACCStream<T>::dot()
   int array_size = this->array_size;
   T * restrict a = this->a;
   T * restrict b = this->b;
-  #pragma acc parallel loop reduction(+:sum) present(a[0:array_size], b[0:array_size]) wait
+  #pragma acc parallel loop gang worker vector reduction(+:sum) present(a[0:array_size], b[0:array_size])
   for (int i = 0; i < array_size; i++)
   {
     sum += a[i] * b[i];

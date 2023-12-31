@@ -1,4 +1,3 @@
-
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that supports OpenACC as per CMake detection"
         "c++")
@@ -10,7 +9,6 @@ register_flag_optional(TARGET_DEVICE
              multicore - Globally set the target device to the host CPU
          Refer to `nvc++ --help` for the full list"
         "")
-
 
 register_flag_optional(CUDA_ARCH
         "[PGI/NVHPC only] Only applicable if `TARGET_DEVICE` is set to `gpu`.
@@ -44,41 +42,24 @@ register_flag_optional(TARGET_PROCESSOR
         Refer to `nvc++ --help` for the full list"
         "")
 
+register_flag_optional(OFFLOAD_FLAGS
+   "OpenACC Offload Flags"
+   ""
+)
+
 macro(setup)
-    if (${TARGET_DEVICE} STREQUAL "amd")
-        register_append_cxx_flags(ANY "-fopenacc;-Wno-openacc-and-cxx")
-        register_append_link_flags("-fopenacc;-Wno-openacc-and-cxx")
-    else ()
-        find_package(OpenACC REQUIRED)
+    find_package(OpenACC REQUIRED)
 
-        if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
-            # CMake didn't really implement ACC as a target before 3.16, so we append them manually
-            separate_arguments(OpenACC_CXX_FLAGS)
-            register_append_cxx_flags(ANY ${OpenACC_CXX_FLAGS})
-            register_append_link_flags(${OpenACC_CXX_FLAGS})
-        else()
-            register_link_library(OpenACC::OpenACC_CXX)
-        endif()
+    if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
+        # CMake didn't really implement ACC as a target before 3.16, so we append them manually
+        separate_arguments(OpenACC_CXX_FLAGS)
+        register_append_cxx_flags(ANY ${OpenACC_CXX_FLAGS})
+        register_append_link_flags(${OpenACC_CXX_FLAGS})
+    else()
+        register_link_library(OpenACC::OpenACC_CXX)
+    endif()
 
-
-        register_definitions(restrict=__restrict)
-        # XXX NVHPC is really new so older Cmake thinks it's PGI, which is true
-        if ((CMAKE_CXX_COMPILER_ID STREQUAL PGI) OR (CMAKE_CXX_COMPILER_ID STREQUAL NVHPC))
-
-            if (TARGET_DEVICE)
-                register_append_cxx_flags(ANY -target=${TARGET_DEVICE})
-            endif ()
-
-            if (CUDA_ARCH)
-                register_append_cxx_flags(ANY -gpu=${CUDA_ARCH})
-            endif ()
-
-            if (TARGET_PROCESSOR)
-                register_append_cxx_flags(ANY -tp=${TARGET_PROCESSOR})
-            endif ()
-
-        endif ()
-    endif ()
-
+    register_definitions(restrict=__restrict)
+    register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
 endmacro()
 
