@@ -1,4 +1,3 @@
-
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that supports OpenACC as per CMake detection"
         "c++")
@@ -9,7 +8,6 @@ register_flag_optional(TARGET_DEVICE
              multicore - Globally set the target device to the host CPU
          Refer to `nvc++ --help` for the full list"
         "")
-
 
 register_flag_optional(CUDA_ARCH
         "[PGI/NVHPC only] Only applicable if `TARGET_DEVICE` is set to `gpu`.
@@ -43,6 +41,11 @@ register_flag_optional(TARGET_PROCESSOR
         Refer to `nvc++ --help` for the full list"
         "")
 
+register_flag_optional(OFFLOAD_FLAGS
+   "OpenACC Offload Flags"
+   ""
+)
+
 macro(setup)
     find_package(OpenACC REQUIRED)
 
@@ -71,7 +74,8 @@ macro(setup)
         if (TARGET_PROCESSOR)
             register_append_cxx_flags(ANY -tp=${TARGET_PROCESSOR})
         endif ()
-
+    else()
+        register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
     endif ()
 
 endmacro()
