@@ -60,23 +60,6 @@ macro(setup)
     endif()
 
     register_definitions(restrict=__restrict)
-    # XXX NVHPC is really new so older Cmake thinks it's PGI, which is true
-    if ((CMAKE_CXX_COMPILER_ID STREQUAL PGI) OR (CMAKE_CXX_COMPILER_ID STREQUAL NVHPC))
-
-        if (TARGET_DEVICE)
-            register_append_cxx_flags(ANY -target=${TARGET_DEVICE})
-        endif ()
-
-        if (CUDA_ARCH)
-            register_append_cxx_flags(ANY -gpu=${CUDA_ARCH})
-        endif ()
-
-        if (TARGET_PROCESSOR)
-            register_append_cxx_flags(ANY -tp=${TARGET_PROCESSOR})
-        endif ()
-    else()
-        register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
-    endif ()
-
+    register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
 endmacro()
 
