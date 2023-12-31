@@ -60,6 +60,7 @@ macro(setup)
     endif()
 
     register_definitions(restrict=__restrict)
+    separate_arguments(OFFLOAD_FLAGS)
     register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
 endmacro()
 
