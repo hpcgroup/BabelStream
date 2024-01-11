@@ -62,5 +62,6 @@ macro(setup)
     register_definitions(restrict=__restrict)
     separate_arguments(OFFLOAD_FLAGS)
     register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
+    register_append_link_flags(${OFFLOAD_FLAGS})
 endmacro()
 
