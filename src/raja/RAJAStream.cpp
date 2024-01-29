@@ -47,8 +47,8 @@ void RAJAStream<T>::read_arrays(
   auto strategy = host_alloc.getAllocationStrategy();
 
   umpire::util::AllocationRecord recordA{a.data(), sizeof(T) * array_size, strategy};
-  umpire::util::AllocationRecord recordB{a.data(), sizeof(T) * array_size, strategy};
-  umpire::util::AllocationRecord recordC{a.data(), sizeof(T) * array_size, strategy};
+  umpire::util::AllocationRecord recordB{b.data(), sizeof(T) * array_size, strategy};
+  umpire::util::AllocationRecord recordC{c.data(), sizeof(T) * array_size, strategy};
 
   rm.registerAllocation(a.data(), recordA);
   rm.registerAllocation(b.data(), recordB);
