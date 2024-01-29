@@ -32,7 +32,7 @@ void RAJAStream<T>::init_arrays(T initA, T initB, T initC)
   T* a = d_a;
   T* b = d_b;
   T* c = d_c;
-  RAJA::forall<exec_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index) {
+  RAJA::forall<default_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index) {
     a[index] = initA;
     b[index] = initB;
     c[index] = initC;
@@ -64,7 +64,7 @@ void RAJAStream<T>::copy()
 {
   T* a = d_a;
   T* c = d_c;
-  RAJA::forall<exec_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
+  RAJA::forall<default_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index];
   });
@@ -76,7 +76,7 @@ void RAJAStream<T>::mul()
   T* b = d_b;
   T* c = d_c;
   const T scalar = startScalar;
-  RAJA::forall<exec_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
+  RAJA::forall<default_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
   {
     b[index] = scalar*c[index];
   });
@@ -88,7 +88,7 @@ void RAJAStream<T>::add()
   T* a = d_a;
   T* b = d_b;
   T* c = d_c;
-  RAJA::forall<exec_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
+  RAJA::forall<default_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
   {
     c[index] = a[index] + b[index];
   });
@@ -101,7 +101,7 @@ void RAJAStream<T>::triad()
   T* b = d_b;
   T* c = d_c;
   const T scalar = startScalar;
-  RAJA::forall<exec_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
+  RAJA::forall<default_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index)
   {
     a[index] = b[index] + scalar*c[index];
   });
@@ -115,7 +115,7 @@ void RAJAStream<T>::nstream()
     T* c = d_c;
     const T scalar = startScalar;
 
-    RAJA::forall<exec_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index) {
+    RAJA::forall<default_policy>(range, [=] RAJA_HOST_DEVICE (RAJA::Index_type index) {
       a[index] += b[index] + scalar * c[index];
       }
     );
@@ -128,7 +128,7 @@ T RAJAStream<T>::dot()
   T* b = d_b;
   T sum{};
 
-  RAJA::forall<exec_policy>(range,
+  RAJA::forall<reduce_policy>(range,
     RAJA::expt::Reduce<RAJA::operators::plus>(&sum),
     [=] RAJA_HOST_DEVICE (RAJA::Index_type index, T &_sum) {
       _sum += a[index] * b[index];
