@@ -43,28 +43,20 @@ template <class T>
 void RAJAStream<T>::read_arrays(
         std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
 {
-#if defined(RAJA_ENABLE_CPU) || defined(BABELSTREAM_MANAGED_ALLOC)
-  std::copy(d_a, d_a + array_size, a.data())
-  std::copy(d_b, d_b + array_size, b.data())
-  std::copy(d_c, d_c + array_size, c.data())
-#else
-  umpire::Allocator host_alloc = rm.getAllocator("HOST");
-  T *h_a = static_cast<T*>(host_alloc.allocate(sizeof(T) * array_size));
-  T *h_b = static_cast<T*>(host_alloc.allocate(sizeof(T) * array_size));
-  T *h_c = static_cast<T*>(host_alloc.allocate(sizeof(T) * array_size));
+  auto host_alloc = rm.getAllocator("HOST");
+  auto strategy = host_alloc.getAllocationStrategy();
 
-  rm.copy(h_a, d_a);
-  rm.copy(h_b, d_b);
-  rm.copy(h_c, d_c);
+  umpire::util::AllocationRecord recordA{a.data(), sizeof(T) * array_size, strategy};
+  umpire::util::AllocationRecord recordB{a.data(), sizeof(T) * array_size, strategy};
+  umpire::util::AllocationRecord recordC{a.data(), sizeof(T) * array_size, strategy};
 
-  std::copy(h_a, h_a + array_size, a.data());
-  std::copy(h_b, h_b + array_size, b.data());
-  std::copy(h_c, h_c + array_size, c.data());
-
-  host_alloc.deallocate(h_a);
-  host_alloc.deallocate(h_b);
-  host_alloc.deallocate(h_c);
-#endif
+  rm.registerAllocation(a.data(), recordA);
+  rm.registerAllocation(b.data(), recordB);
+  rm.registerAllocation(c.data(), recordC);
+  
+  rm.copy(a.data(), d_a);
+  rm.copy(b.data(), d_b);
+  rm.copy(c.data(), d_c);
 }
 
 template <class T>
