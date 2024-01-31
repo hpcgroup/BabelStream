@@ -23,22 +23,22 @@
 
 #if defined(RAJA_TARGET_CPU)
 #if defined(RAJA_ENABLE_OPENMP)
-    using exec_policy = RAJA::omp_parallel_for_exec;
-    using reduce_policy = RAJA::omp_reduce;
+  using default_policy = RAJA::omp_parallel_for_exec;
+  using reduce_policy = default_policy;
 #else
-    using exec_policy = RAJA::seq_exec;
-    using reduce_policy = RAJA::seq_reduce;
+  using default_policy = RAJA::seq_exec;
+  using reduce_policy = default_policy;
 #endif
 #else
 #if defined(RAJA_ENABLE_CUDA)
-    using exec_policy = RAJA::cuda_exec<TBSIZE>;
-    using reduce_policy = RAJA::cuda_reduce;
+  using default_policy = RAJA::cuda_exec<TBSIZE>;
+  using reduce_policy = RAJA::cuda_exec_occ_calc<TBSIZE>;
 #elif defined(RAJA_ENABLE_HIP)
-    using exec_policy = RAJA::hip_exec<TBSIZE>;
-    using reduce_policy = RAJA::hip_reduce;
+  using default_policy = RAJA::hip_exec<TBSIZE>;
+  using reduce_policy = RAJA::hip_exec_occ_calc<TBSIZE>;
 #elif defined(RAJA_ENABLE_SYCL)
-    using exec_policy = RAJA::sycl_exec<TBSIZE>;
-    using reduce_policy = RAJA::sycl_reduce;
+  using default_policy = RAJA::sycl_exec<TBSIZE>;
+  using reduce_policy = default_policy;
 #endif
 #endif
 
