@@ -1,4 +1,3 @@
-
 register_flag_optional(CMAKE_CXX_COMPILER
         "Any CXX compiler that supports OpenACC as per CMake detection"
         "c++")
@@ -6,10 +5,10 @@ register_flag_optional(CMAKE_CXX_COMPILER
 register_flag_optional(TARGET_DEVICE
         "[PGI/NVHPC only] This sets the `-target` flag, possible values are:
              gpu       - Globally set the target device to an NVIDIA GPU
+             amd       - Globally set the target device to an AMD GPU
              multicore - Globally set the target device to the host CPU
          Refer to `nvc++ --help` for the full list"
         "")
-
 
 register_flag_optional(CUDA_ARCH
         "[PGI/NVHPC only] Only applicable if `TARGET_DEVICE` is set to `gpu`.
@@ -43,6 +42,11 @@ register_flag_optional(TARGET_PROCESSOR
         Refer to `nvc++ --help` for the full list"
         "")
 
+register_flag_optional(OFFLOAD_FLAGS
+   "OpenACC Offload Flags"
+   ""
+)
+
 macro(setup)
     find_package(OpenACC REQUIRED)
 
@@ -55,24 +59,9 @@ macro(setup)
         register_link_library(OpenACC::OpenACC_CXX)
     endif()
 
-
     register_definitions(restrict=__restrict)
-    # XXX NVHPC is really new so older Cmake thinks it's PGI, which is true
-    if ((CMAKE_CXX_COMPILER_ID STREQUAL PGI) OR (CMAKE_CXX_COMPILER_ID STREQUAL NVHPC))
-
-        if (TARGET_DEVICE)
-            register_append_cxx_flags(ANY -target=${TARGET_DEVICE})
-        endif ()
-
-        if (CUDA_ARCH)
-            register_append_cxx_flags(ANY -gpu=${CUDA_ARCH})
-        endif ()
-
-        if (TARGET_PROCESSOR)
-            register_append_cxx_flags(ANY -tp=${TARGET_PROCESSOR})
-        endif ()
-
-    endif ()
-
+    separate_arguments(OFFLOAD_FLAGS)
+    register_append_cxx_flags(ANY ${OFFLOAD_FLAGS})
+    register_append_link_flags(${OFFLOAD_FLAGS})
 endmacro()
 
