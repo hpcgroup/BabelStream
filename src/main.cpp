@@ -112,17 +112,6 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   // Declare timers
   std::chrono::high_resolution_clock::time_point t1, t2;
 
-  // Warmup Loop
-  std::cout << "Running Warmups" << std::endl;
-  for (unsigned int k = 0; k < num_warmups; k++)
-  {
-    stream->copy();
-    stream->mul();
-    stream->add();
-    stream->triad();
-    sum = stream->dot();
-  }
-
   // Main loop
   std::cout << "Running Main Loop" << std::endl;
   for (unsigned int k = 0; k < num_times; k++)
@@ -447,11 +436,11 @@ void run()
 
     for (int i = 0; i < timings.size(); ++i)
     {
-      // Get min/max; ignore the first result
-      auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
+      // Get min/max; ignore warmup iterations
+      auto minmax = std::minmax_element(timings[i].begin() + num_warmups, timings[i].end());
 
-      // Calculate average; ignore the first result
-      double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
+      // Calculate average; ignore warmup iterations
+      double average = std::accumulate(timings[i].begin() + num_warmups, timings[i].end(), 0.0) / (double)(num_times - num_warmups);
 
       // Display results
       if (output_as_csv)
