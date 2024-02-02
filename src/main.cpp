@@ -56,6 +56,7 @@
 // Default size of 2^25
 int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
+unsigned int num_warmups = 10;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
@@ -111,7 +112,19 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   // Declare timers
   std::chrono::high_resolution_clock::time_point t1, t2;
 
+  // Warmup Loop
+  std::cout << "Running Warmups" << std::endl;
+  for (unsigned int k = 0; k < num_warmups; k++)
+  {
+    stream->copy();
+    stream->mul();
+    stream->add();
+    stream->triad();
+    sum = stream->dot();
+  }
+
   // Main loop
+  std::cout << "Running Main Loop" << std::endl;
   for (unsigned int k = 0; k < num_times; k++)
   {
     // Execute Copy
@@ -648,6 +661,15 @@ void parseArguments(int argc, char *argv[])
     {
       mibibytes = true;
     }
+    else if (!std::string("--warmups").compare(argv[i]) ||
+             !std::string("-w").compare(argv[i]))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &num_warmups))
+      {
+        std::cerr << "Invalid number of warmup iterations." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    }
     else if (!std::string("--help").compare(argv[i]) ||
              !std::string("-h").compare(argv[i]))
     {
@@ -663,6 +685,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --triad-only         Only run triad" << std::endl;
       std::cout << "      --nstream-only       Only run nstream" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
+      std::cout << "  -w  --warmups    WARMUPS Run the test WARMUPS time before bandwith calculation" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
       exit(EXIT_SUCCESS);
