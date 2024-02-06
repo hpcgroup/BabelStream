@@ -113,7 +113,8 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Main loop
-  std::cout << "Running Main Loop" << std::endl;
+  if (!output_as_csv)
+    std::cout << "Running Main Loop" << std::endl;
   for (unsigned int k = 0; k < num_times; k++)
   {
     // Execute Copy
