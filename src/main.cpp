@@ -115,7 +115,7 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   // Main loop
   if (!output_as_csv)
     std::cout << "Running Main Loop" << std::endl;
-  for (unsigned int k = 0; k < num_times; k++)
+  for (unsigned int k = 0; k < num_times + num_warmups; k++)
   {
     // Execute Copy
     t1 = std::chrono::high_resolution_clock::now();
@@ -165,7 +165,7 @@ std::vector<std::vector<double>> run_triad(Stream<T> *stream)
 
   // Run triad in loop
   t1 = std::chrono::high_resolution_clock::now();
-  for (unsigned int k = 0; k < num_times; k++)
+  for (unsigned int k = 0; k < num_times + num_warmups; k++)
   {
     stream->triad();
   }
@@ -187,7 +187,7 @@ std::vector<std::vector<double>> run_nstream(Stream<T> *stream)
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Run nstream in loop
-  for (int k = 0; k < num_times; k++) {
+  for (int k = 0; k < num_times + num_warmups; k++) {
     t1 = std::chrono::high_resolution_clock::now();
     stream->nstream();
     t2 = std::chrono::high_resolution_clock::now();
@@ -386,7 +386,7 @@ void run()
       << ")" << std::endl;
   }
 
-  check_solution<T>(num_times, a, b, c, sum);
+  check_solution<T>(num_times + num_warmups, a, b, c, sum);
 
   // Display timing results
   if (output_as_csv)
