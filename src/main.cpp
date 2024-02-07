@@ -441,7 +441,7 @@ void run()
       auto minmax = std::minmax_element(timings[i].begin() + num_warmups, timings[i].end());
 
       // Calculate average; ignore warmup iterations
-      double average = std::accumulate(timings[i].begin() + num_warmups, timings[i].end(), 0.0) / (double)(num_times - num_warmups);
+      double average = std::accumulate(timings[i].begin() + num_warmups, timings[i].end(), 0.0) / (double)(num_times);
 
       // Display results
       if (output_as_csv)
