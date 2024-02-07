@@ -43,8 +43,9 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
   check_error();
 
   // Print out device information
-  std::cout << "Using HIP device " << getDeviceName(device_index) << std::endl;
-  std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  if (!output_as_csv) {
+    std::cout << "Using HIP device " << getDeviceName(device_index) << std::endl;
+    std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 #if defined(MANAGED)
     std::cout << "Memory: MANAGED" << std::endl;
 #elif defined(PAGEFAULT)
@@ -52,6 +53,7 @@ HIPStream<T>::HIPStream(const int ARRAY_SIZE, const int device_index)
 #else
     std::cout << "Memory: DEFAULT" << std::endl;
 #endif
+  }
 
   array_size = ARRAY_SIZE;
   // Round dot_num_blocks up to next multiple of (TBSIZE * dot_elements_per_lane)

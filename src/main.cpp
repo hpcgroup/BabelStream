@@ -56,6 +56,7 @@
 // Default size of 2^25
 int ARRAY_SIZE = 33554432;
 unsigned int num_times = 100;
+unsigned int num_warmups = 10;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
@@ -112,7 +113,9 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Main loop
-  for (unsigned int k = 0; k < num_times; k++)
+  if (!output_as_csv)
+    std::cout << "Running Main Loop" << std::endl;
+  for (unsigned int k = 0; k < num_times + num_warmups; k++)
   {
     // Execute Copy
     t1 = std::chrono::high_resolution_clock::now();
@@ -162,7 +165,7 @@ std::vector<std::vector<double>> run_triad(Stream<T> *stream)
 
   // Run triad in loop
   t1 = std::chrono::high_resolution_clock::now();
-  for (unsigned int k = 0; k < num_times; k++)
+  for (unsigned int k = 0; k < num_times + num_warmups; k++)
   {
     stream->triad();
   }
@@ -184,7 +187,7 @@ std::vector<std::vector<double>> run_nstream(Stream<T> *stream)
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Run nstream in loop
-  for (int k = 0; k < num_times; k++) {
+  for (int k = 0; k < num_times + num_warmups; k++) {
     t1 = std::chrono::high_resolution_clock::now();
     stream->nstream();
     t2 = std::chrono::high_resolution_clock::now();
@@ -383,7 +386,7 @@ void run()
       << ")" << std::endl;
   }
 
-  check_solution<T>(num_times, a, b, c, sum);
+  check_solution<T>(num_times + num_warmups, a, b, c, sum);
 
   // Display timing results
   if (output_as_csv)
@@ -434,11 +437,11 @@ void run()
 
     for (int i = 0; i < timings.size(); ++i)
     {
-      // Get min/max; ignore the first result
-      auto minmax = std::minmax_element(timings[i].begin()+1, timings[i].end());
+      // Get min/max; ignore warmup iterations
+      auto minmax = std::minmax_element(timings[i].begin() + num_warmups, timings[i].end());
 
-      // Calculate average; ignore the first result
-      double average = std::accumulate(timings[i].begin()+1, timings[i].end(), 0.0) / (double)(num_times - 1);
+      // Calculate average; ignore warmup iterations
+      double average = std::accumulate(timings[i].begin() + num_warmups, timings[i].end(), 0.0) / (double)(num_times - num_warmups);
 
       // Display results
       if (output_as_csv)
@@ -648,6 +651,15 @@ void parseArguments(int argc, char *argv[])
     {
       mibibytes = true;
     }
+    else if (!std::string("--warmups").compare(argv[i]) ||
+             !std::string("-w").compare(argv[i]))
+    {
+      if (++i >= argc || !parseUInt(argv[i], &num_warmups))
+      {
+        std::cerr << "Invalid number of warmup iterations." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    }
     else if (!std::string("--help").compare(argv[i]) ||
              !std::string("-h").compare(argv[i]))
     {
@@ -663,6 +675,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --triad-only         Only run triad" << std::endl;
       std::cout << "      --nstream-only       Only run nstream" << std::endl;
       std::cout << "      --csv                Output as csv table" << std::endl;
+      std::cout << "  -w  --warmups    WARMUPS Run the test WARMUPS time before bandwith calculation" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
       exit(EXIT_SUCCESS);

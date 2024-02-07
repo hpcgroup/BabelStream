@@ -40,15 +40,17 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   check_error();
 
   // Print out device information
-  std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
-  std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
+  if (!output_as_csv) {
+    std::cout << "Using CUDA device " << getDeviceName(device_index) << std::endl;
+    std::cout << "Driver: " << getDeviceDriver(device_index) << std::endl;
 #if defined(MANAGED)
-  std::cout << "Memory: MANAGED" << std::endl;
+    std::cout << "Memory: MANAGED" << std::endl;
 #elif defined(PAGEFAULT)
-  std::cout << "Memory: PAGEFAULT" << std::endl;
+    std::cout << "Memory: PAGEFAULT" << std::endl;
 #else
-  std::cout << "Memory: DEFAULT" << std::endl;
+    std::cout << "Memory: DEFAULT" << std::endl;
 #endif
+  }
   array_size = ARRAY_SIZE;
 
 
@@ -64,7 +66,9 @@ CUDAStream<T>::CUDAStream(const int ARRAY_SIZE, const int device_index)
   size_t array_bytes = sizeof(T);
   array_bytes *= ARRAY_SIZE;
   size_t total_bytes = array_bytes * 4;
-  std::cout << "Reduction kernel config: " << dot_num_blocks << " groups of (fixed) size " << TBSIZE << std::endl;
+  if (!output_as_csv) {
+    std::cout << "Reduction kernel config: " << dot_num_blocks << " groups of (fixed) size " << TBSIZE << std::endl;
+  }
 
   // Check buffers fit on the device
   if (props.totalGlobalMem < total_bytes)

@@ -16,6 +16,8 @@
 #define startC (0.0)
 #define startScalar (0.4)
 
+extern bool output_as_csv;
+
 template <class T>
 class Stream
 {
