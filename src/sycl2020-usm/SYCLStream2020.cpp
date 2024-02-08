@@ -160,12 +160,13 @@ template <class T>
 T SYCLStream<T>::dot()
 {
   T h_sum = 0;
+  T h_sum{};
   queue->submit([&](sycl::handler &cgh)
   {
     cgh.parallel_for(sycl::range<1>{array_size},
       // Reduction object, to perform summation - initialises the result to zero
       // hipSYCL doesn't sypport the initialize_to_identity property yet
-#if defined(__HIPSYCL__) || defined(__OPENSYCL__)
+#if defined(__HIPSYCL__) || defined(__OPENSYCL__) || defined(__ADAPTIVECPP__)
       sycl::reduction(sum, sycl::plus<T>()),
 #else
       sycl::reduction(sum, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
