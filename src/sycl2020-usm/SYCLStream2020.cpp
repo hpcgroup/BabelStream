@@ -159,7 +159,6 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
-  T h_sum = 0;
   T h_sum{};
   queue->submit([&](sycl::handler &cgh)
   {
@@ -183,6 +182,7 @@ T SYCLStream<T>::dot()
   return *sum;
 #else
   queue->memcpy(&h_sum, sum, sizeof(T));
+  queue->wait();
   return h_sum;
 #endif
 }
@@ -209,6 +209,7 @@ void SYCLStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::v
   queue->memcpy(std::data(h_a), a, sizeof(T) * array_size);
   queue->memcpy(std::data(h_b), b, sizeof(T) * array_size);
   queue->memcpy(std::data(h_c), c, sizeof(T) * array_size);
+  queue->wait();
 }
 
 void getDeviceList(void)
