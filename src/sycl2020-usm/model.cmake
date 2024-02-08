@@ -9,14 +9,14 @@ register_flag_required(SYCL_COMPILER
            ONEAPI-ICPX  - icpx as a standalone compiler
            ONEAPI-Clang - oneAPI's Clang driver (enabled via `source /opt/intel/oneapi/setvars.sh  --include-intel-llvm`)
            DPCPP        - dpc++ as a standalone compiler (https://github.com/intel/llvm)
-           HIPSYCL      - hipSYCL compiler (https://github.com/illuhad/hipSYCL)
+           HIPSYCL/ADAPTIVECPP      - hipSYCL compiler (https://github.com/illuhad/hipSYCL)
            COMPUTECPP   - ComputeCpp compiler (https://developer.codeplay.com/products/computecpp/ce/home)")
 
 register_flag_optional(SYCL_COMPILER_DIR
         "Absolute path to the selected SYCL compiler directory, most are packaged differently so set the path according to `SYCL_COMPILER`:
            ONEAPI-ICPX              - `icpx` must be used for OneAPI 2023 and later on releases (i.e `source /opt/intel/oneapi/setvars.sh` first)
            ONEAPI-Clang             - set to the directory that contains the Intel clang++ binary.
-           HIPSYCL|DPCPP|COMPUTECPP - set to the root of the binary distribution that contains at least `bin/`, `include/`, and `lib/`"
+           HIPSYCL|DPCPP|COMPUTECPP|ADAPTIVECPP - set to the root of the binary distribution that contains at least `bin/`, `include/`, and `lib/`"
         "")
 
 register_flag_optional(MANAGED_ALLOC "Use UM instead of device-only allocation" "OFF")
@@ -41,7 +41,8 @@ macro(setup)
         # register_definitions(_GLIBCXX_USE_CXX11_ABI=0)
         find_package(hipSYCL CONFIG REQUIRED)
         message(STATUS "ok")
-
+    elseif (${SYCL_COMPILER} STREQUAL "ADAPTIVECPP")
+        find_package(AdaptiveCpp CONFIG REQUIRED)
     elseif (${SYCL_COMPILER} STREQUAL "COMPUTECPP")
 
         list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
@@ -80,7 +81,8 @@ endmacro()
 macro(setup_target NAME)
     if (
     (${SYCL_COMPILER} STREQUAL "COMPUTECPP") OR
-    (${SYCL_COMPILER} STREQUAL "HIPSYCL"))
+    (${SYCL_COMPILER} STREQUAL "HIPSYCL") OR
+    (${SYCL_COMPILER} STREQUAL "ADAPTIVECPP"))
         # so ComputeCpp and hipSYCL has this weird (and bad) CMake usage where they append their
         # own custom integration header flags AFTER the target has been specified
         # hence this macro here

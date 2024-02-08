@@ -159,13 +159,13 @@ void SYCLStream<T>::nstream()
 template <class T>
 T SYCLStream<T>::dot()
 {
-  T h_sum = 0;
+  T h_sum{};
   queue->submit([&](sycl::handler &cgh)
   {
     cgh.parallel_for(sycl::range<1>{array_size},
       // Reduction object, to perform summation - initialises the result to zero
       // hipSYCL doesn't sypport the initialize_to_identity property yet
-#if defined(__HIPSYCL__) || defined(__OPENSYCL__)
+#if defined(__HIPSYCL__) || defined(__OPENSYCL__) || defined(__ADAPTIVECPP__)
       sycl::reduction(sum, sycl::plus<T>()),
 #else
       sycl::reduction(sum, sycl::plus<T>(), sycl::property::reduction::initialize_to_identity{}),
@@ -182,6 +182,7 @@ T SYCLStream<T>::dot()
   return *sum;
 #else
   queue->memcpy(&h_sum, sum, sizeof(T));
+  queue->wait();
   return h_sum;
 #endif
 }
@@ -208,6 +209,7 @@ void SYCLStream<T>::read_arrays(std::vector<T>& h_a, std::vector<T>& h_b, std::v
   queue->memcpy(std::data(h_a), a, sizeof(T) * array_size);
   queue->memcpy(std::data(h_b), b, sizeof(T) * array_size);
   queue->memcpy(std::data(h_c), c, sizeof(T) * array_size);
+  queue->wait();
 }
 
 void getDeviceList(void)
