@@ -6,6 +6,7 @@
 // source code
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <numeric>
 #include <cmath>
@@ -60,8 +61,10 @@ unsigned int num_warmups = 10;
 unsigned int deviceIndex = 0;
 bool use_float = false;
 bool output_as_csv = false;
+std::string csv_file = "";
 bool mibibytes = false;
 std::string csv_separator = ",";
+std::ofstream csv_out;
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
@@ -85,13 +88,10 @@ int main(int argc, char *argv[])
 
   parseArguments(argc, argv);
 
-  if (!output_as_csv)
-  {
-    std::cout
-      << "BabelStream" << std::endl
-      << "Version: " << VERSION_STRING << std::endl
-      << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
-  }
+  std::cout
+    << "BabelStream" << std::endl
+    << "Version: " << VERSION_STRING << std::endl
+    << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
 
   if (use_float)
     run<float>();
@@ -113,8 +113,7 @@ std::vector<std::vector<double>> run_all(Stream<T> *stream, T& sum)
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Main loop
-  if (!output_as_csv)
-    std::cout << "Running Main Loop" << std::endl;
+  std::cout << "Running Main Loop" << std::endl;
   for (unsigned int k = 0; k < num_times + num_warmups; k++)
   {
     // Execute Copy
@@ -206,44 +205,40 @@ void run()
 {
   std::streamsize ss = std::cout.precision();
 
-  if (!output_as_csv)
+  if (selection == Benchmark::All)
+    std::cout << "Running kernels " << num_times << " times" << std::endl;
+  else if (selection == Benchmark::Triad)
   {
-    if (selection == Benchmark::All)
-      std::cout << "Running kernels " << num_times << " times" << std::endl;
-    else if (selection == Benchmark::Triad)
-    {
-      std::cout << "Running triad " << num_times << " times" << std::endl;
-      std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
-    }
-
-
-    if (sizeof(T) == sizeof(float))
-      std::cout << "Precision: float" << std::endl;
-    else
-      std::cout << "Precision: double" << std::endl;
-
-
-    if (mibibytes)
-    {
-      // MiB = 2^20
-      std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
-    }
-    else
-    {
-      // MB = 10^6
-      std::cout << std::setprecision(1) << std::fixed
-                << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-      std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
-                << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
-    }
-    std::cout.precision(ss);
-
+    std::cout << "Running triad " << num_times << " times" << std::endl;
+    std::cout << "Number of elements: " << ARRAY_SIZE << std::endl;
   }
+
+
+  if (sizeof(T) == sizeof(float))
+    std::cout << "Precision: float" << std::endl;
+  else
+    std::cout << "Precision: double" << std::endl;
+
+
+  if (mibibytes)
+  {
+    // MiB = 2^20
+    std::cout << std::setprecision(1) << std::fixed
+              << "Array size: " << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
+              << " (=" << ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
+    std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -20.0) << " MiB"
+              << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*std::pow(2.0, -30.0) << " GiB)" << std::endl;
+  }
+  else
+  {
+    // MB = 10^6
+    std::cout << std::setprecision(1) << std::fixed
+              << "Array size: " << ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+              << " (=" << ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+    std::cout << "Total size: " << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-6 << " MB"
+              << " (=" << 3.0*ARRAY_SIZE*sizeof(T)*1.0E-9 << " GB)" << std::endl;
+  }
+  std::cout.precision(ss);
 
   Stream<T> *stream;
 
@@ -349,49 +344,47 @@ void run()
 
   if (output_as_csv)
   {
-    std::cout
+    csv_out
       << "phase" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
       << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
       << "runtime" << std::endl;
-    std::cout
+    csv_out
       << "Init" << csv_separator
       << ARRAY_SIZE << csv_separator
       << sizeof(T) << csv_separator
       << initBWps << csv_separator
       << initElapsedS << std::endl;
-    std::cout
+    csv_out
       << "Read" << csv_separator
       << ARRAY_SIZE << csv_separator
       << sizeof(T) << csv_separator
       << readBWps << csv_separator
       << readElapsedS << std::endl;
   }
-  else
-  {
-    std::cout << "Init: "
-      << std::setw(7)
-      << initElapsedS
-      << " s (="
-      << initBWps
-      << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
-      << ")" << std::endl;
-    std::cout << "Read: "
-      << std::setw(7)
-      << readElapsedS
-      << " s (="
-      << readBWps
-      << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
-      << ")" << std::endl;
-  }
+  
+  std::cout << "Init: "
+    << std::setw(7)
+    << initElapsedS
+    << " s (="
+    << initBWps
+    << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
+    << ")" << std::endl;
+  std::cout << "Read: "
+    << std::setw(7)
+    << readElapsedS
+    << " s (="
+    << readBWps
+    << (mibibytes ? " MiBytes/sec" : " MBytes/sec")
+    << ")" << std::endl;
 
   check_solution<T>(num_times + num_warmups, a, b, c, sum);
 
   // Display timing results
   if (output_as_csv)
   {
-    std::cout
+    csv_out
       << "function" << csv_separator
       << "num_times" << csv_separator
       << "n_elements" << csv_separator
@@ -401,17 +394,15 @@ void run()
       << "max_runtime" << csv_separator
       << "avg_runtime" << std::endl;
   }
-  else
-  {
-    std::cout
-      << std::left << std::setw(12) << "Function"
-      << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
-      << std::left << std::setw(12) << "Min (sec)"
-      << std::left << std::setw(12) << "Max"
-      << std::left << std::setw(12) << "Average"
-      << std::endl
-      << std::fixed;
-  }
+  
+  std::cout
+    << std::left << std::setw(12) << "Function"
+    << std::left << std::setw(12) << ((mibibytes) ? "MiBytes/sec" : "MBytes/sec")
+    << std::left << std::setw(12) << "Min (sec)"
+    << std::left << std::setw(12) << "Max"
+    << std::left << std::setw(12) << "Average"
+    << std::endl
+    << std::fixed;
 
 
   if (selection == Benchmark::All || selection == Benchmark::Nstream)
@@ -446,7 +437,7 @@ void run()
       // Display results
       if (output_as_csv)
       {
-        std::cout
+        csv_out
           << labels[i] << csv_separator
           << num_times << csv_separator
           << ARRAY_SIZE << csv_separator
@@ -457,17 +448,14 @@ void run()
           << average
           << std::endl;
       }
-      else
-      {
-        std::cout
-          << std::left << std::setw(12) << labels[i]
-          << std::left << std::setw(12) << std::setprecision(3) << 
-            ((mibibytes) ? std::pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
-          << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
-          << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
-          << std::left << std::setw(12) << std::setprecision(5) << average
-          << std::endl;
-      }
+      std::cout
+        << std::left << std::setw(12) << labels[i]
+        << std::left << std::setw(12) << std::setprecision(3) << 
+        ((mibibytes) ? std::pow(2.0, -20.0) : 1.0E-6) * sizes[i] / (*minmax.first)
+        << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+        << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+        << std::left << std::setw(12) << std::setprecision(5) << average
+        << std::endl;
     }
   } else if (selection == Benchmark::Triad)
   {
@@ -477,7 +465,7 @@ void run()
 
     if (output_as_csv)
     {
-      std::cout
+      csv_out
         << "function" << csv_separator
         << "num_times" << csv_separator
         << "n_elements" << csv_separator
@@ -485,7 +473,7 @@ void run()
         << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
         << "runtime"
         << std::endl;
-      std::cout
+      csv_out
         << "Triad" << csv_separator
         << num_times << csv_separator
         << ARRAY_SIZE << csv_separator
@@ -494,17 +482,14 @@ void run()
         << timings[0][0]
         << std::endl;
     }
-    else
-    {
-      std::cout
-        << "--------------------------------"
-        << std::endl << std::fixed
-        << "Runtime (seconds): " << std::left << std::setprecision(5)
-        << timings[0][0] << std::endl
-        << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
-        << std::left << std::setprecision(3)
-        << bandwidth << std::endl;
-    }
+    std::cout
+      << "--------------------------------"
+      << std::endl << std::fixed
+      << "Runtime (seconds): " << std::left << std::setprecision(5)
+      << timings[0][0] << std::endl
+      << "Bandwidth (" << ((mibibytes) ? "GiB/s" : "GB/s") << "):  "
+      << std::left << std::setprecision(3)
+      << bandwidth << std::endl;
   }
 
   delete stream;
@@ -646,6 +631,13 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--csv").compare(argv[i]))
     {
       output_as_csv = true;
+       std::cout << i << std::endl;
+      if (++i >= argc) {
+        std::cerr << "--csv, specified but no path was given" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      csv_file = argv[i];
+      csv_out.open(csv_file);
     }
     else if (!std::string("--mibibytes").compare(argv[i]))
     {
@@ -674,7 +666,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
       std::cout << "      --triad-only         Only run triad" << std::endl;
       std::cout << "      --nstream-only       Only run nstream" << std::endl;
-      std::cout << "      --csv                Output as csv table" << std::endl;
+      std::cout << "      --csv        FILE    Output to csv file" << std::endl;
       std::cout << "  -w  --warmups    WARMUPS Run the test WARMUPS time before bandwith calculation" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
