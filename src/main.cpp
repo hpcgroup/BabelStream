@@ -6,6 +6,7 @@
 // source code
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <numeric>
 #include <cmath>
@@ -62,6 +63,7 @@ bool use_float = false;
 bool output_as_csv = false;
 bool mibibytes = false;
 std::string csv_separator = ",";
+std::string csv_filename = "";
 
 template <typename T>
 void check_solution(const unsigned int ntimes, std::vector<T>& a, std::vector<T>& b, std::vector<T>& c, T& sum);
@@ -347,21 +349,23 @@ void run()
   auto initBWps = ((mibibytes ? std::pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / initElapsedS;
   auto readBWps = ((mibibytes ? std::pow(2.0, -20.0) : 1.0E-6) * (3 * sizeof(T) * ARRAY_SIZE)) / readElapsedS;
 
+  std::ofstream csv_file(csv_filename);
+  
   if (output_as_csv)
   {
-    std::cout
+    csv_file
       << "phase" << csv_separator
       << "n_elements" << csv_separator
       << "sizeof" << csv_separator
       << ((mibibytes) ? "max_mibytes_per_sec" : "max_mbytes_per_sec") << csv_separator
       << "runtime" << std::endl;
-    std::cout
+    csv_file
       << "Init" << csv_separator
       << ARRAY_SIZE << csv_separator
       << sizeof(T) << csv_separator
       << initBWps << csv_separator
       << initElapsedS << std::endl;
-    std::cout
+    csv_file
       << "Read" << csv_separator
       << ARRAY_SIZE << csv_separator
       << sizeof(T) << csv_separator
@@ -391,7 +395,7 @@ void run()
   // Display timing results
   if (output_as_csv)
   {
-    std::cout
+    csv_file
       << "function" << csv_separator
       << "num_times" << csv_separator
       << "n_elements" << csv_separator
@@ -412,7 +416,6 @@ void run()
       << std::endl
       << std::fixed;
   }
-
 
   if (selection == Benchmark::All || selection == Benchmark::Nstream)
   {
@@ -446,7 +449,7 @@ void run()
       // Display results
       if (output_as_csv)
       {
-        std::cout
+        csv_file
           << labels[i] << csv_separator
           << num_times << csv_separator
           << ARRAY_SIZE << csv_separator
@@ -477,7 +480,7 @@ void run()
 
     if (output_as_csv)
     {
-      std::cout
+      csv_file
         << "function" << csv_separator
         << "num_times" << csv_separator
         << "n_elements" << csv_separator
@@ -485,7 +488,7 @@ void run()
         << ((mibibytes) ? "gibytes_per_sec" : "gbytes_per_sec") << csv_separator
         << "runtime"
         << std::endl;
-      std::cout
+      csv_file
         << "Triad" << csv_separator
         << num_times << csv_separator
         << ARRAY_SIZE << csv_separator
@@ -506,6 +509,8 @@ void run()
         << bandwidth << std::endl;
     }
   }
+
+  csv_file.close();
 
   delete stream;
 
@@ -646,6 +651,11 @@ void parseArguments(int argc, char *argv[])
     else if (!std::string("--csv").compare(argv[i]))
     {
       output_as_csv = true;
+      if (++i >= argc) {
+        std::cerr << "No path provided for csv file" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      csv_filename = argv[i];
     }
     else if (!std::string("--mibibytes").compare(argv[i]))
     {
@@ -674,7 +684,7 @@ void parseArguments(int argc, char *argv[])
       std::cout << "      --float              Use floats (rather than doubles)" << std::endl;
       std::cout << "      --triad-only         Only run triad" << std::endl;
       std::cout << "      --nstream-only       Only run nstream" << std::endl;
-      std::cout << "      --csv                Output as csv table" << std::endl;
+      std::cout << "      --csv        PATH    Output as csv table" << std::endl;
       std::cout << "  -w  --warmups    WARMUPS Run the test WARMUPS time before bandwith calculation" << std::endl;
       std::cout << "      --mibibytes          Use MiB=2^20 for bandwidth calculation (default MB=10^6)" << std::endl;
       std::cout << std::endl;
