@@ -29,6 +29,7 @@ KokkosCore_config.*
 
 Makefile
 
+spack*
 build/
 cmake-build-*/
 CMakeFiles/

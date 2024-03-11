@@ -21,9 +21,18 @@ macro(setup)
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -extended-lambda --expt-relaxed-constexpr --restrict --keep")
+
         register_definitions(RAJA_TARGET_GPU)
     elseif (${RAJA_BACK_END} STREQUAL "HIP")
         find_package(hip REQUIRED)
+
+        enable_language(HIP)
+        set(CMAKE_HIP_STANDARD 14)
+        set(CMAKE_HIP_SEPARABLE_COMPILATION ON)
+
+        set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE HIP)
+        set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE HIP)
+
         register_definitions(RAJA_TARGET_GPU)
     elseif (${RAJA_BACK_END} STREQUAL "SYCL")
         register_definitions(RAJA_TARGET_GPU)
