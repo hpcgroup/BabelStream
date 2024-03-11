@@ -11,5 +11,8 @@ macro(setup)
     # CMake defaults to -O2 for CUDA at Release, let's wipe that and use the global RELEASE_FLAG
     # appended later
     wipe_gcc_style_optimisation_flags(CMAKE_CUDA_FLAGS_${BUILD_TYPE})
+
+    set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
+    set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
 endmacro()
 
