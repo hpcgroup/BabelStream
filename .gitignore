@@ -30,7 +30,7 @@ KokkosCore_config.*
 Makefile
 
 spack*
-build/
+build*
 cmake-build-*/
 CMakeFiles/
 .idea/
