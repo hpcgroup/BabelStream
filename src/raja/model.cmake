@@ -16,6 +16,7 @@ macro(setup)
     if (${RAJA_BACK_END} STREQUAL "CUDA")
         enable_language(CUDA)
         set(CMAKE_CUDA_STANDARD 14)
+        set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)

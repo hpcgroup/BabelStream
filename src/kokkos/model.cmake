@@ -11,6 +11,8 @@ macro(setup)
 
         set(CMAKE_CUDA_STANDARD 17)
 
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -extended-lambda -Wext-lambda-captures-this -expt-relaxed-constexpr")
+
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
     elseif (${KOKKOS_BACK_END} STREQUAL "HIP")
@@ -18,7 +20,6 @@ macro(setup)
 
         enable_language(HIP)
         set(CMAKE_HIP_STANDARD 17)
-        set(CMAKE_HIP_SEPARABLE_COMPILATION ON)
 
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE HIP)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE HIP)
