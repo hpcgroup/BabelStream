@@ -10,7 +10,6 @@ macro(setup)
         enable_language(CUDA)
 
         set(CMAKE_CUDA_STANDARD 17)
-        set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)

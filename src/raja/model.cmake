@@ -16,7 +16,6 @@ macro(setup)
     if (${RAJA_BACK_END} STREQUAL "CUDA")
         enable_language(CUDA)
         set(CMAKE_CUDA_STANDARD 14)
-        set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE CUDA)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE CUDA)
@@ -28,7 +27,6 @@ macro(setup)
 
         enable_language(HIP)
         set(CMAKE_HIP_STANDARD 14)
-        set(CMAKE_HIP_SEPARABLE_COMPILATION ON)
 
         set_source_files_properties(${IMPL_SOURCES} PROPERTIES LANGUAGE HIP)
         set_source_files_properties(src/main.cpp PROPERTIES LANGUAGE HIP)
