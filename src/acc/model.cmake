@@ -48,14 +48,9 @@ register_flag_optional(OFFLOAD_FLAGS
 )
 
 macro(setup)
-    find_package(OpenACC REQUIRED)
+    find_package(OpenACC)
 
-    if(${CMAKE_VERSION} VERSION_LESS "3.16.0")
-        # CMake didn't really implement ACC as a target before 3.16, so we append them manually
-        separate_arguments(OpenACC_CXX_FLAGS)
-        register_append_cxx_flags(ANY ${OpenACC_CXX_FLAGS})
-        register_append_link_flags(${OpenACC_CXX_FLAGS})
-    else()
+    if(OpenACC_CXX_FOUND)
         register_link_library(OpenACC::OpenACC_CXX)
     endif()
 
