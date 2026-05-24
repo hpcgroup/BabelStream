@@ -32,8 +32,8 @@ endmacro()
 set(EXE_NAME babelstream)
 
 # for chrono and some basic CXX features, models can overwrite this if required
-set(CMAKE_CXX_STANDARD 11)
-
+set(CMAKE_CXX_STANDARD 17) #modified
+ 
 if (NOT CMAKE_BUILD_TYPE)
     message("No CMAKE_BUILD_TYPE specified, defaulting to 'Release'")
     set(CMAKE_BUILD_TYPE "Release")
@@ -163,6 +163,8 @@ register_model(raja USE_RAJA RAJAStream.cpp)
 register_model(tbb TBB TBBStream.cpp)
 register_model(thrust THRUST ThrustStream.cu) # Thrust uses cu, even for rocThrust
 register_model(futhark FUTHARK FutharkStream.cpp)
+
+register_model(acc-as-omp ACC OMPStream.cpp) #added omp
 
 
 set(USAGE ON CACHE BOOL "Whether to print all custom flags for the selected model")
